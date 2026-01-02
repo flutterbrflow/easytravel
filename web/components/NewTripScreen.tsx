@@ -1,12 +1,50 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IMAGES } from '../constants';
 import { AppRoute } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
 
 const NewTripScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [destination, setDestination] = useState('');
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(false);
 
   const handleBack = () => navigate(-1);
+
+  const handleSave = async () => {
+    if (!destination) {
+      alert('Por favor, informe o destino.');
+      return;
+    }
+    if (!user) {
+      alert('Você precisa estar logado.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.trips.create({
+        destination,
+        start_date: startDate,
+        end_date: endDate,
+        owner_id: user.id,
+        status: 'planning',
+        image_url: IMAGES.genericMap // Default image for now
+      });
+      navigate(AppRoute.LIST);
+    } catch (error: any) {
+      console.error('Error saving trip', error);
+      alert('Erro ao salvar viagem: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden font-display transition-colors duration-200">
@@ -21,11 +59,12 @@ const NewTripScreen: React.FC = () => {
         <h2 className="text-[#111418] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">
           Nova Viagem
         </h2>
-        <button 
-          onClick={() => navigate(AppRoute.LIST)}
-          className="flex w-20 items-center justify-end"
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="flex w-20 items-center justify-end disabled:opacity-50"
         >
-          <p className="text-primary text-base font-bold leading-normal tracking-[0.015em]">Salvar</p>
+          <p className="text-primary text-base font-bold leading-normal tracking-[0.015em]">{loading ? '...' : 'Salvar'}</p>
         </button>
       </div>
 
@@ -49,6 +88,8 @@ const NewTripScreen: React.FC = () => {
               <span className="material-symbols-outlined text-primary text-[24px]">location_on</span>
             </div>
             <input
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
               className="flex w-full min-w-0 flex-1 resize-none bg-transparent text-[#111418] dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 p-4 h-14 text-base font-medium leading-normal border-none focus:ring-0 outline-none"
               placeholder="Ex: Paris, França"
             />
@@ -63,27 +104,27 @@ const NewTripScreen: React.FC = () => {
             </label>
             <button className="text-primary text-sm font-medium">Limpar</button>
           </div>
-          {/* Date Range Display */}
+          {/* Date Picker Inputs (Simplified) */}
           <div className="flex gap-3 mb-2">
-            <div className="flex-1 bg-white dark:bg-surface-dark rounded-xl p-3 border-2 border-primary shadow-sm flex flex-col gap-1">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Ida
-              </span>
-              <span className="text-base font-bold text-[#111418] dark:text-white">5 Jul, 2024</span>
-            </div>
-            <div className="flex-1 bg-white dark:bg-surface-dark rounded-xl p-3 border border-transparent shadow-sm flex flex-col gap-1">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Volta
-              </span>
-              <span className="text-base font-medium text-slate-400 dark:text-slate-500">Selecione</span>
-            </div>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="flex-1 bg-white dark:bg-surface-dark rounded-xl p-3 border border-transparent shadow-sm text-base font-medium text-[#111418] dark:text-white"
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="flex-1 bg-white dark:bg-surface-dark rounded-xl p-3 border border-transparent shadow-sm text-base font-medium text-[#111418] dark:text-white"
+            />
           </div>
-          
-          {/* Calendar Visual Component */}
+
+          {/* Calendar Visual Mock (Kept for UI consistency but static for now) */}
           <CalendarMock />
         </div>
 
-        {/* Participants */}
+        {/* Participants (Mock for now) */}
         <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center mb-1">
             <h3 className="text-[#111418] dark:text-slate-200 text-lg font-bold leading-tight tracking-[-0.015em]">
@@ -95,10 +136,9 @@ const NewTripScreen: React.FC = () => {
           </div>
           <div className="flex items-center gap-4 overflow-x-auto no-scrollbar py-2">
             {/* Current User */}
-            <Participant avatar={IMAGES.userAvatar} name="Você" isUser />
-            {/* Friend 1 */}
+            <Participant avatar={user?.user_metadata?.avatar_url || IMAGES.userAvatar} name="Você" isUser />
+            {/* Mock friends */}
             <Participant avatar={IMAGES.friend1} name="André" />
-            {/* Friend 2 */}
             <Participant avatar={IMAGES.friend2} name="Sofia" />
             {/* Add Button */}
             <button className="flex flex-col items-center gap-1 shrink-0 group">
@@ -129,11 +169,12 @@ const NewTripScreen: React.FC = () => {
       {/* Sticky Footer CTA */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 z-20 md:max-w-md md:mx-auto">
         <button
-          onClick={() => navigate(AppRoute.LIST)}
-          className="w-full bg-primary hover:bg-blue-600 active:scale-[0.98] transition-all text-white font-bold text-lg h-14 rounded-full shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+          onClick={handleSave}
+          disabled={loading}
+          className="w-full bg-primary hover:bg-blue-600 active:scale-[0.98] transition-all text-white font-bold text-lg h-14 rounded-full shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 disabled:opacity-70"
         >
           <span className="material-symbols-outlined">flight_takeoff</span>
-          Criar Viagem
+          {loading ? 'Salvando...' : 'Criar Viagem'}
         </button>
       </div>
     </div>
@@ -164,7 +205,7 @@ const CalendarMock: React.FC = () => {
   const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
   return (
-    <div className="bg-white dark:bg-surface-dark rounded-2xl p-4 shadow-sm w-full">
+    <div className="bg-white dark:bg-surface-dark rounded-2xl p-4 shadow-sm w-full opacity-60 pointer-events-none">
       <div className="flex items-center justify-between mb-4 px-2">
         <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
           <span className="material-symbols-outlined text-[#111418] dark:text-white text-[20px]">chevron_left</span>
@@ -181,21 +222,12 @@ const CalendarMock: React.FC = () => {
           </p>
         ))}
         {/* Padding for first day starts on Monday */}
-        <div className="col-start-2"></div> 
+        <div className="col-start-2"></div>
         {days.map((d) => {
-           let classes = "h-10 w-full text-[#111418] dark:text-white text-sm font-medium rounded-full hover:bg-slate-100 dark:hover:bg-slate-700";
-           // Mock logic for the range shown in screenshot (5 to 12)
-           if (d === 5) {
-             classes = "h-10 w-full bg-primary text-white text-sm font-bold rounded-l-full shadow-md relative z-10";
-           } else if (d > 5 && d < 12) {
-             classes = "h-10 w-full bg-primary/10 dark:bg-primary/20 text-[#111418] dark:text-white text-sm font-medium";
-           } else if (d === 12) {
-             classes = "h-10 w-full bg-primary/10 dark:bg-primary/20 hover:bg-primary/30 text-[#111418] dark:text-white text-sm font-medium rounded-r-full transition-colors";
-           }
-           
-           return (
+          let classes = "h-10 w-full text-[#111418] dark:text-white text-sm font-medium rounded-full hover:bg-slate-100 dark:hover:bg-slate-700";
+          return (
             <button key={d} className={classes}>{d}</button>
-           )
+          )
         })}
       </div>
     </div>

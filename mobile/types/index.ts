@@ -16,6 +16,7 @@ export interface User {
 
 export type RootStackParamList = {
   Welcome: undefined;
+  Login: undefined;
   TripList: undefined;
   NewTrip: { tripId?: string };
   TripDetail: { tripId: string };
@@ -23,6 +24,6 @@ export type RootStackParamList = {
 
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
+    interface RootParamList extends RootStackParamList { }
   }
 }

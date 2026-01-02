@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -8,20 +9,41 @@ import {
     FlatList,
     useColorScheme,
     Dimensions,
+    ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RootStackParamList, Trip } from '../types';
-import { IMAGES, COLORS, MOCK_TRIPS } from '../constants';
+import { RootStackParamList } from '../types';
+import { IMAGES, COLORS } from '../constants';
+import { api, TripRow } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TripList'>;
 
 const TripListScreen: React.FC<Props> = ({ navigation }) => {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+    const [trips, setTrips] = useState<TripRow[]>([]);
+    const [loading, setLoading] = useState(true);
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+
+    useEffect(() => {
+        loadTrips();
+    }, []);
+
+    const loadTrips = async () => {
+        try {
+            const data = await api.trips.list();
+            setTrips(data);
+        } catch (error) {
+            console.error('Error loading trips', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <SafeAreaView
@@ -33,7 +55,7 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.headerRow}>
                     <TouchableOpacity>
                         <Image
-                            source={{ uri: IMAGES.userAvatar }}
+                            source={{ uri: user?.user_metadata?.avatar_url || IMAGES.userAvatar }}
                             style={styles.avatar}
                         />
                     </TouchableOpacity>
@@ -42,7 +64,7 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
                 <Text style={[styles.headerTitle, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
-                    Minhas Viagens
+                    Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
                 </Text>
 
                 {/* Segmented Control */}
@@ -86,9 +108,13 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
             </View>
 
             {/* Main List */}
-            {activeTab === 'upcoming' ? (
+            {loading ? (
+                <View style={styles.emptyContainer}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                </View>
+            ) : activeTab === 'upcoming' ? (
                 <FlatList
-                    data={[...MOCK_TRIPS, { id: 'add-new' }] as any}
+                    data={[...trips, { id: 'add-new' }] as any}
                     renderItem={({ item }) =>
                         item.id === 'add-new' ? (
                             <TouchableOpacity
@@ -132,14 +158,14 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
     );
 };
 
-const TripCard: React.FC<{ trip: Trip; isDark: boolean }> = ({ trip, isDark }) => (
+const TripCard: React.FC<{ trip: TripRow; isDark: boolean }> = ({ trip, isDark }) => (
     <TouchableOpacity
         style={[styles.card, { backgroundColor: isDark ? '#1e2a36' : '#ffffff' }]}
         activeOpacity={0.7}
     >
         <View style={styles.cardImageWrapper}>
             <Image
-                source={{ uri: trip.imageUrl }}
+                source={{ uri: trip.image_url || IMAGES.genericMap }}
                 style={styles.cardImage}
                 resizeMode="cover"
             />
@@ -150,14 +176,9 @@ const TripCard: React.FC<{ trip: Trip; isDark: boolean }> = ({ trip, isDark }) =
             <View style={styles.badgeContainer}>
                 <View style={[
                     styles.badge,
-                    trip.status === 'upcoming' && trip.id === '1'
-                        ? { backgroundColor: 'rgba(19, 127, 236, 0.9)' }
-                        : { backgroundColor: 'rgba(255, 255, 255, 0.2)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }
+                    { backgroundColor: 'rgba(19, 127, 236, 0.9)' }
                 ]}>
-                    {trip.status === 'upcoming' && trip.id === '1' && (
-                        <MaterialCommunityIcons name="timer-sand" size={14} color="#ffffff" style={{ marginRight: 4 }} />
-                    )}
-                    <Text style={styles.badgeText}>{trip.timeLabel}</Text>
+                    <Text style={styles.badgeText}>{trip.status === 'planning' ? 'Planejando' : 'Em breve'}</Text>
                 </View>
             </View>
         </View>
@@ -167,7 +188,7 @@ const TripCard: React.FC<{ trip: Trip; isDark: boolean }> = ({ trip, isDark }) =
                     {trip.destination}
                 </Text>
                 <Text style={[styles.cardDates, { color: isDark ? '#9ba8b8' : '#617589' }]}>
-                    {trip.startDate} - {trip.endDate}
+                    {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date).toLocaleDateString()}
                 </Text>
             </View>
             <TouchableOpacity style={styles.cardButton}>

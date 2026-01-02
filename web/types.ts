@@ -18,4 +18,5 @@ export enum AppRoute {
   WELCOME = '/',
   LIST = '/list',
   NEW_TRIP = '/new',
+  LOGIN = '/login',
 }

@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -10,18 +11,59 @@ import {
     useColorScheme,
     KeyboardAvoidingView,
     Platform,
+    Alert,
+    ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { RootStackParamList } from '../types';
 import { IMAGES, COLORS } from '../constants';
+import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NewTrip'>;
 
 const NewTripScreen: React.FC<Props> = ({ navigation }) => {
+    const { user } = useAuth();
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+
+    const [destination, setDestination] = useState('');
+    const [loading, setLoading] = useState(false);
+    // Hardcoded dates for MVP
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
+    const handleSave = async () => {
+        if (!destination) {
+            Alert.alert('Atenção', 'Por favor, informe o destino.');
+            return;
+        }
+
+        if (!user) {
+            Alert.alert('Erro', 'Você precisa estar logado para salvar.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await api.trips.create({
+                destination,
+                start_date: startDate,
+                end_date: endDate,
+                owner_id: user.id || 'unknown',
+                status: 'planning',
+                image_url: IMAGES.genericMap // Default image
+            });
+            navigation.navigate('TripList');
+        } catch (error: any) {
+            console.error('Error saving trip', error);
+            Alert.alert('Erro', 'Não foi possível salvar a viagem: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <SafeAreaView
@@ -36,8 +78,12 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={[styles.headerTitle, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
                     Nova Viagem
                 </Text>
-                <TouchableOpacity onPress={() => navigation.navigate('TripList')}>
-                    <Text style={styles.saveButton}>Salvar</Text>
+                <TouchableOpacity onPress={handleSave} disabled={loading}>
+                    {loading ? (
+                        <ActivityIndicator size="small" color={COLORS.primary} />
+                    ) : (
+                        <Text style={styles.saveButton}>Salvar</Text>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -66,6 +112,8 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                                 style={[styles.input, { color: isDark ? COLORS.textLight : COLORS.textDark }]}
                                 placeholder="Ex: Paris, França"
                                 placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                                value={destination}
+                                onChangeText={setDestination}
                             />
                         </View>
                     </View>
@@ -85,34 +133,19 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                             <View style={[styles.dateBox, styles.dateActive, { backgroundColor: isDark ? '#1e2a36' : '#ffffff' }]}>
                                 <Text style={[styles.dateLabel, { color: isDark ? '#94a3b8' : '#64748b' }]}>IDA</Text>
                                 <Text style={[styles.dateValue, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
-                                    5 Jul, 2024
+                                    {startDate}
                                 </Text>
                             </View>
                             <View style={[styles.dateBox, { backgroundColor: isDark ? '#1e2a36' : '#ffffff' }]}>
                                 <Text style={[styles.dateLabel, { color: isDark ? '#94a3b8' : '#64748b' }]}>VOLTA</Text>
-                                <Text style={[styles.dateValueEmpty, { color: isDark ? '#64748b' : '#94a3b8' }]}>
-                                    Selecione
+                                <Text style={[styles.dateValue, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
+                                    {endDate}
                                 </Text>
                             </View>
                         </View>
 
-                        {/* Calendar Placeholder */}
-                        <View style={[styles.calendar, { backgroundColor: isDark ? '#1e2a36' : '#ffffff' }]}>
-                            <View style={styles.calendarHeader}>
-                                <TouchableOpacity>
-                                    <MaterialCommunityIcons name="chevron-left" size={20} color={isDark ? COLORS.textLight : COLORS.textDark} />
-                                </TouchableOpacity>
-                                <Text style={[styles.calendarMonth, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
-                                    Julho 2024
-                                </Text>
-                                <TouchableOpacity>
-                                    <MaterialCommunityIcons name="chevron-right" size={20} color={isDark ? COLORS.textLight : COLORS.textDark} />
-                                </TouchableOpacity>
-                            </View>
-                            <Text style={[styles.calendarPlaceholder, { color: isDark ? '#64748b' : '#94a3b8' }]}>
-                                📅 Calendário (em desenvolvimento)
-                            </Text>
-                        </View>
+                        {/* Simple instructions for now since date picker needs a lib */}
+                        <Text style={{ color: '#94a3b8', fontSize: 12 }}>* Datas simplificadas para este protótipo</Text>
                     </View>
 
                     {/* Participants */}
@@ -128,7 +161,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                         </View>
 
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.participantsScroll}>
-                            <Participant avatar={IMAGES.userAvatar} name="Você" isUser />
+                            <Participant avatar={user?.user_metadata?.avatar_url || IMAGES.userAvatar} name="Você" isUser />
                             <Participant avatar={IMAGES.friend1} name="André" />
                             <Participant avatar={IMAGES.friend2} name="Sofia" />
                             <TouchableOpacity style={styles.addParticipant}>
@@ -167,11 +200,12 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
             <View style={[styles.footer, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.backgroundLight }]}>
                 <TouchableOpacity
                     style={styles.createButton}
-                    onPress={() => navigation.navigate('TripList')}
+                    onPress={handleSave}
                     activeOpacity={0.8}
+                    disabled={loading}
                 >
                     <MaterialCommunityIcons name="airplane-takeoff" size={24} color="#ffffff" />
-                    <Text style={styles.createButtonText}>Criar Viagem</Text>
+                    <Text style={styles.createButtonText}>{loading ? 'Salvando...' : 'Criar Viagem'}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -305,31 +339,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: COLORS.primary,
         fontWeight: '500',
-    },
-    calendar: {
-        borderRadius: 16,
-        padding: 16,
-        minHeight: 100,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-    },
-    calendarHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    calendarMonth: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    calendarPlaceholder: {
-        textAlign: 'center',
-        fontSize: 14,
-        paddingVertical: 20,
     },
     participantsScroll: {
         marginTop: 8,

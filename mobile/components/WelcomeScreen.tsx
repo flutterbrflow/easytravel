@@ -71,7 +71,7 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
                 {/* Action Button */}
                 <TouchableOpacity
                     style={styles.button}
-                    onPress={() => navigation.navigate('TripList')}
+                    onPress={() => navigation.navigate('Login')}
                     activeOpacity={0.8}
                 >
                     <Text style={styles.buttonText}>Começar Agora</Text>

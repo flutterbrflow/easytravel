@@ -1,11 +1,32 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IMAGES, MOCK_TRIPS } from '../constants';
-import { AppRoute, Trip } from '../types';
+import { IMAGES } from '../constants';
+import { AppRoute } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { api, TripRow } from '../services/api';
 
 const TripListScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [trips, setTrips] = useState<TripRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadTrips();
+  }, []);
+
+  const loadTrips = async () => {
+    try {
+      const data = await api.trips.list();
+      setTrips(data);
+    } catch (error) {
+      console.error('Error loading trips:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark shadow-xl overflow-hidden">
@@ -16,7 +37,7 @@ const TripListScreen: React.FC = () => {
             <div className="flex size-12 shrink-0 items-center">
               <div
                 className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-white dark:border-[#22303e] shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
-                style={{ backgroundImage: `url("${IMAGES.userAvatar}")` }}
+                style={{ backgroundImage: `url("${user?.user_metadata?.avatar_url || IMAGES.userAvatar}")` }}
               ></div>
             </div>
             <div className="flex w-12 items-center justify-end">
@@ -26,34 +47,31 @@ const TripListScreen: React.FC = () => {
             </div>
           </div>
           <h1 className="text-[#111418] dark:text-white tracking-tight text-[32px] font-bold leading-tight">
-            Minhas Viagens
+            Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
           </h1>
         </div>
         {/* Segmented Control */}
         <div className="px-4 pb-2">
           <div className="flex h-10 w-full items-center rounded-xl bg-[#f0f2f4] dark:bg-[#1e2a36] p-1 relative">
             <div
-              className={`absolute left-1 h-8 bg-white dark:bg-[#2c3b4a] rounded-lg shadow-sm transition-all duration-300 ease-in-out w-[calc(50%-4px)] ${
-                activeTab === 'past' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
-              }`}
+              className={`absolute left-1 h-8 bg-white dark:bg-[#2c3b4a] rounded-lg shadow-sm transition-all duration-300 ease-in-out w-[calc(50%-4px)] ${activeTab === 'past' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
+                }`}
             ></div>
             <button
               onClick={() => setActiveTab('upcoming')}
-              className={`relative z-10 flex-1 h-full flex items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
-                activeTab === 'upcoming'
+              className={`relative z-10 flex-1 h-full flex items-center justify-center rounded-lg text-sm font-semibold transition-colors ${activeTab === 'upcoming'
                   ? 'text-[#111418] dark:text-white'
                   : 'text-[#617589] dark:text-[#9ba8b8] hover:text-[#111418] dark:hover:text-white'
-              }`}
+                }`}
             >
               Próximas
             </button>
             <button
               onClick={() => setActiveTab('past')}
-              className={`relative z-10 flex-1 h-full flex items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
-                activeTab === 'past'
+              className={`relative z-10 flex-1 h-full flex items-center justify-center rounded-lg text-sm font-semibold transition-colors ${activeTab === 'past'
                   ? 'text-[#111418] dark:text-white'
                   : 'text-[#617589] dark:text-[#9ba8b8] hover:text-[#111418] dark:hover:text-white'
-              }`}
+                }`}
             >
               Passadas
             </button>
@@ -63,11 +81,19 @@ const TripListScreen: React.FC = () => {
 
       {/* Main List */}
       <main className="flex-1 overflow-y-auto pb-28 px-4 space-y-4 no-scrollbar">
-        {activeTab === 'upcoming' && (
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : activeTab === 'upcoming' ? (
           <>
-            {MOCK_TRIPS.map((trip) => (
+            {trips.length > 0 ? trips.map((trip) => (
               <TripCard key={trip.id} trip={trip} />
-            ))}
+            )) : (
+              <div className="text-center py-10 text-gray-500">
+                <p>Nenhuma viagem planejada.</p>
+              </div>
+            )}
 
             {/* Add New Trip Button (Inline) */}
             <button
@@ -83,13 +109,11 @@ const TripListScreen: React.FC = () => {
               </div>
             </button>
           </>
-        )}
-        
-        {activeTab === 'past' && (
-           <div className="text-center py-10 text-gray-500">
-             <span className="material-symbols-outlined text-4xl mb-2">history</span>
-             <p>Nenhuma viagem passada recente.</p>
-           </div>
+        ) : (
+          <div className="text-center py-10 text-gray-500">
+            <span className="material-symbols-outlined text-4xl mb-2">history</span>
+            <p>Nenhuma viagem passada recente.</p>
+          </div>
         )}
       </main>
 
@@ -116,25 +140,19 @@ const TripListScreen: React.FC = () => {
   );
 };
 
-const TripCard: React.FC<{ trip: any }> = ({ trip }) => (
+const TripCard: React.FC<{ trip: TripRow }> = ({ trip }) => (
   <div className="group relative flex flex-col items-stretch justify-start rounded-2xl bg-white dark:bg-[#1e2a36] shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden transition-all hover:shadow-lg">
     <div
       className="w-full h-40 bg-center bg-no-repeat bg-cover relative"
-      style={{ backgroundImage: `url("${trip.imageUrl}")` }}
+      style={{ backgroundImage: `url("${trip.image_url || IMAGES.genericMap}")` }}
     >
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
       <div className="absolute bottom-3 left-4">
         <span
-          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-sm ${
-            trip.status === 'upcoming' && trip.id === '1'
-              ? 'bg-primary/90'
-              : 'bg-white/20 border border-white/20'
-          }`}
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-sm bg-primary/90`}
         >
-           {trip.status === 'upcoming' && trip.id === '1' && (
-             <span className="material-symbols-outlined text-[14px]">timer</span>
-           )}
-          {trip.timeLabel}
+          {/* Logic for time label would be here */}
+          {trip.status === 'planning' ? 'Planejando' : 'Em breve'}
         </span>
       </div>
     </div>
@@ -145,7 +163,7 @@ const TripCard: React.FC<{ trip: any }> = ({ trip }) => (
             {trip.destination}
           </h3>
           <p className="text-[#617589] dark:text-[#9ba8b8] text-sm font-medium mt-1">
-            {trip.startDate} - {trip.endDate}
+            {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date).toLocaleDateString()}
           </p>
         </div>
         <button className="size-8 flex items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors">
@@ -158,7 +176,7 @@ const TripCard: React.FC<{ trip: any }> = ({ trip }) => (
 
 const NavItem: React.FC<{ icon: string; label: string; active?: boolean }> = ({ icon, label, active }) => (
   <button className={`flex flex-col items-center justify-center gap-1 w-16 ${active ? 'text-primary' : 'text-[#9ba8b8] hover:text-[#617589]'}`}>
-    <span className={`material-symbols-outlined text-[26px] ${active ? 'font-variation-fill' : ''}`} style={active ? {fontVariationSettings: "'FILL' 1"} : {}}>{icon}</span>
+    <span className={`material-symbols-outlined text-[26px] ${active ? 'font-variation-fill' : ''}`} style={active ? { fontVariationSettings: "'FILL' 1" } : {}}>{icon}</span>
     <span className={`text-[10px] ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
   </button>
 );

@@ -8,10 +8,12 @@ import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import WelcomeScreen from './components/WelcomeScreen';
+import LoginScreen from './components/LoginScreen';
 import TripListScreen from './components/TripListScreen';
 import NewTripScreen from './components/NewTripScreen';
 import { RootStackParamList } from './types';
 import { COLORS } from './constants';
+import { AuthProvider } from './contexts/AuthContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -85,31 +87,36 @@ const MainTabs = () => {
   );
 };
 
+
+
 export default function App() {
   const colorScheme = useColorScheme();
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-          }}
-        >
-          <Stack.Screen name="Welcome" component={WelcomeScreen} />
-          <Stack.Screen name="TripList" component={MainTabs} />
-          <Stack.Screen
-            name="NewTrip"
-            component={NewTripScreen}
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
+      <AuthProvider>
+        <NavigationContainer>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+              animation: 'slide_from_right',
             }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
+          >
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="TripList" component={MainTabs} />
+            <Stack.Screen
+              name="NewTrip"
+              component={NewTripScreen}
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+              }}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
