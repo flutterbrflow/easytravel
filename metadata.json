@@ -1,0 +1,5 @@
+{
+  "name": "EasyTravel",
+  "description": "A travel planning application to organize itineraries, track expenses, and save memories.",
+  "requestFramePermissions": []
+}
