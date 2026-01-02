@@ -8,13 +8,16 @@ import {
     FlatList,
     useColorScheme,
     Dimensions,
-    ActivityIndicator
+    ActivityIndicator,
+    RefreshControl
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import { supabase } from '../lib/supabase';
 import { RootStackParamList } from '../types';
 import { IMAGES, COLORS } from '../constants';
 import { api, TripRow } from '../services/api';
@@ -27,6 +30,7 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
     const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
     const [trips, setTrips] = useState<TripRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
 
@@ -48,6 +52,108 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
         }
     };
 
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            // Reload trips
+            await loadTrips();
+
+            // Refresh user session to update avatar/metadata
+            const { error } = await supabase.auth.refreshSession();
+            if (error) console.log('Error refreshing session:', error);
+
+        } catch (error) {
+            console.error('Error refreshing:', error);
+        } finally {
+            setRefreshing(false);
+        }
+    }, []);
+
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'], // Updated to use the correct enum value if checking types, but string array is standard for simpler usage or checking documentation
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.5,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                await uploadAvatar(result.assets[0].uri);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+        }
+    };
+
+    const uploadAvatar = async (uri: string) => {
+        try {
+            setUploading(true);
+
+            // Read file as ArrayBuffer and convert to Base64 to bypass deprecated FileSystem methods and fetch().blob() issues
+            const response = await fetch(uri);
+            const arrayBuffer = await response.arrayBuffer();
+            const fileData = arrayBuffer; // Supabase supports ArrayBuffer directly usually, or we can use Blob if it works.
+            // Actually, let's send the ArrayBuffer directly if supabase-js supports it.
+            // If supabase needs explicit BodyInit that is a Blob, we might need to construct one,
+            // but usually ArrayBuffer works or we can just send the decoded data.
+
+            // Wait, supabase-js upload accepts: File, Blob, Buffer, ArrayBuffer, WebSocket, FormData
+            // So ArrayBuffer is fine! We don't even need to decode to Base64 if we don't want to.
+            // BUT earlier I used 'decode(base64)' which creates an ArrayBuffer.
+            // So 'fileData' should be ArrayBuffer. 
+            // So:
+            // const response = await fetch(uri);
+            // const fileData = await response.arrayBuffer();
+
+            // The logic below uses fileData. Let's try this.
+
+            const fileExt = uri.split('.').pop();
+            const fileName = `${user?.id || 'unknown'}/avatar.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, fileData, {
+                contentType: 'image/jpeg',
+                upsert: true,
+            });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+            if (user?.id) {
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: user.id,
+                        avatar_url: publicUrl,
+                        updated_at: new Date().toISOString(),
+                    });
+
+                if (updateError) throw updateError;
+
+                // Update Auth Metadata so the UI updates automatically via AuthContext
+                const { error: authUpdateError } = await supabase.auth.updateUser({
+                    data: { avatar_url: publicUrl }
+                });
+
+                if (authUpdateError) throw authUpdateError;
+
+                // Force a local state update if needed, but the AuthContext subscription should handle it.
+                // We can also alert success
+                // alert('Avatar atualizado com sucesso!');
+            }
+
+        } catch (error) {
+            console.error('Error uploading avatar:', error);
+            // alert('Erro ao atualizar avatar'); 
+        } finally {
+            setUploading(false);
+        }
+    };
+
     return (
         <SafeAreaView
             style={[styles.container, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.backgroundLight }]}
@@ -56,11 +162,22 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerRow}>
-                    <TouchableOpacity>
-                        <Image
-                            source={{ uri: user?.user_metadata?.avatar_url || IMAGES.userAvatar }}
-                            style={styles.avatar}
-                        />
+                    <TouchableOpacity onPress={pickImage} disabled={uploading}>
+                        {(() => {
+                            const avatarUrl = user?.user_metadata?.avatar_url;
+                            const uri = avatarUrl ? `${avatarUrl}?t=${new Date().getTime()}` : IMAGES.userAvatar;
+                            return (
+                                <Image
+                                    source={{ uri }}
+                                    style={[styles.avatar, uploading && { opacity: 0.5 }]}
+                                />
+                            );
+                        })()}
+                        {uploading && (
+                            <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+                                <ActivityIndicator size="small" color={COLORS.primary} />
+                            </View>
+                        )}
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDark ? '#1e2a36' : '#f3f4f6' }]}>
                         <MaterialCommunityIcons name="cog" size={24} color={isDark ? COLORS.textLight : COLORS.textDark} />
@@ -130,6 +247,14 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
                         }),
                         ...(activeTab === 'upcoming' ? [{ id: 'add-new' }] : [])
                     ] as any}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={COLORS.primary} // iOS
+                            colors={[COLORS.primary]} // Android
+                        />
+                    }
                     renderItem={({ item }) =>
                         item.id === 'add-new' ? (
                             <TouchableOpacity

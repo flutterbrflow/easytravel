@@ -5,6 +5,7 @@ import { IMAGES } from '../constants';
 import { AppRoute } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { api, TripRow } from '../services/api';
+import { supabase } from '../lib/supabase';
 
 const TripListScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const TripListScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [trips, setTrips] = useState<TripRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadTrips();
@@ -19,6 +21,9 @@ const TripListScreen: React.FC = () => {
 
   const loadTrips = async () => {
     try {
+      // Force session refresh to get latest user metadata (avatar)
+      await supabase.auth.refreshSession();
+
       const data = await api.trips.list();
       setTrips(data);
     } catch (error) {
@@ -28,17 +33,97 @@ const TripListScreen: React.FC = () => {
     }
   };
 
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      if (!event.target.files || event.target.files.length === 0) {
+        return;
+      }
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id || 'unknown'}/avatar.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Upload image
+      const { error: uploadError } = await api.storage.upload('avatars', filePath, file, {
+        upsert: true
+      });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get Public URL
+      const { data: { publicUrl } } = supabase
+        .storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update Profile
+      if (user?.id) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            avatar_url: publicUrl,
+            updated_at: new Date().toISOString(),
+          });
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        // Update Auth Metadata so the UI updates automatically via AuthContext
+        const { error: authUpdateError } = await supabase.auth.updateUser({
+          data: { avatar_url: publicUrl }
+        });
+
+        if (authUpdateError) {
+          throw authUpdateError;
+        }
+
+        // Visual feedback
+        const avatarElement = document.getElementById('user-avatar');
+        if (avatarElement) {
+          avatarElement.style.backgroundImage = `url("${publicUrl}?t=${new Date().getTime()}")`;
+        }
+      }
+
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      alert('Erro ao atualizar avatar. Tente novamente.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark shadow-xl overflow-hidden">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background-light dark:bg-background-dark pb-2">
         <div className="flex flex-col gap-2 p-4 pb-2">
           <div className="flex items-center h-12 justify-between">
-            <div className="flex size-12 shrink-0 items-center">
-              <div
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-white dark:border-[#22303e] shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
-                style={{ backgroundImage: `url("${user?.user_metadata?.avatar_url || IMAGES.userAvatar}")` }}
-              ></div>
+            <div className="flex size-12 shrink-0 items-center relative">
+              <input
+                type="file"
+                id="avatar-upload"
+                accept="image/*"
+                onChange={uploadAvatar}
+                className="hidden"
+                disabled={uploading}
+              />
+              <label
+                htmlFor="avatar-upload"
+                id="user-avatar"
+                className={`bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-white dark:border-[#22303e] shadow-sm cursor-pointer hover:opacity-80 transition-opacity ${uploading ? 'opacity-50' : ''}`}
+                style={{ backgroundImage: `url("${user?.user_metadata?.avatar_url ? `${user.user_metadata.avatar_url}?t=${new Date().getTime()}` : IMAGES.userAvatar}")` }}
+              >
+                {uploading && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  </div>
+                )}
+              </label>
             </div>
             <div className="flex w-12 items-center justify-end">
               <button className="flex items-center justify-center rounded-full size-10 bg-transparent text-[#111418] dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
@@ -177,7 +262,6 @@ const TripCard: React.FC<{ trip: TripRow }> = ({ trip }) => (
         <span
           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-sm bg-primary/90`}
         >
-          {/* Logic for time label would be here */}
           {trip.status === 'planning' ? 'Planejando' : 'Em breve'}
         </span>
       </div>

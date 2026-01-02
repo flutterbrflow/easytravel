@@ -43,4 +43,12 @@ export const api = {
     },
 
     // Placeholder para outros serviços (Despesas, Memórias)
+    storage: {
+        upload: async (bucket: string, path: string, file: File, options?: any) => {
+            return await supabase.storage.from(bucket).upload(path, file, options);
+        },
+        getPublicUrl: (bucket: string, path: string) => {
+            return supabase.storage.from(bucket).getPublicUrl(path);
+        }
+    }
 };

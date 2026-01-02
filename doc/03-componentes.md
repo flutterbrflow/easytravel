@@ -104,9 +104,9 @@ Nenhuma
 Tela principal que exibe a lista de viagens do usuário com navegação bottom.
 
 ### Características
-- Header com avatar e settings
+- Header com avatar e settings (upload de avatar ao clicar na imagem)
 - Segmented control (Próximas/Passadas)
-- Lista scrollável de viagens
+- Lista scrollável de viagens com **Pull-to-Refresh**
 - FAB para adicionar nova viagem
 - Bottom navigation bar
 

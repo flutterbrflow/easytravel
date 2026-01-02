@@ -7,7 +7,23 @@ Esta seção documenta a implementação do backend utilizando Supabase para as 
 O projeto utiliza Supabase como Backend-as-a-Service (BaaS) para:
 - **Autenticação:** Gerenciamento de usuários
 - **Banco de Dados:** PostgreSQL para persistência de dados
-- **Storage:** Armazenamento de imagens (em breve)
+- **Storage:** Armazenamento de imagens (buckets 'avatars' e 'memories')
+
+## Storage
+
+### Buckets
+
+#### `avatars`
+Armazena fotos de perfil dos usuários.
+- **Acesso:** Público (Leitura)
+- **RLS:** Autenticados podem fazer upload/update (apenas seus próprios arquivos, validado por nome da pasta/arquivo ou policy)
+- **Cache Busting:** O front-end (Web e Mobile) deve implementar cache busting appendando `?t=timestamp` à URL da imagem, pois o Supabase/CDN faz cache agressivo de arquivos com mesmo nome.
+
+#### `trip-images` (Planejado)
+Imagens de capa para viagens.
+
+#### `memories` (Planejado)
+Fotos privadas de memórias da viagem.
 
 ## Estrutura do Banco de Dados
 
