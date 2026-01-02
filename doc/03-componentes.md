@@ -173,6 +173,7 @@ interface NavItemProps {
 | FAB (+) | Click | Navega para `/new` |
 | Botão "Planejar nova" | Click | Navega para `/new` |
 | TripCard | Click | Navega para detalhes (WIP) |
+| Lixeira (Card) | Click | Confirmação e exclusão da viagem |
 
 ### Dados Mock
 Utiliza `MOCK_TRIPS` de `constants.ts`:
@@ -256,6 +257,7 @@ Renderiza um calendário interativo com seleção de período (range).
 | Campo | Tipo | Required | Placeholder |
 |-------|------|----------|-------------|
 | Destino | Text Input | Sim | "Ex: Paris, França" |
+| Imagem de Capa | File/Image Picker | Não | - |
 | Data Ida | Date | Sim | - |
 | Data Volta | Date | Não | "Selecione" |
 | Participantes | Multi-select | Não | - |

@@ -9,7 +9,8 @@ import {
     useColorScheme,
     Dimensions,
     ActivityIndicator,
-    RefreshControl
+    RefreshControl,
+    Alert
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -50,6 +51,29 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleDeleteTrip = (id: string) => {
+        Alert.alert(
+            "Excluir Viagem",
+            "Tem certeza que deseja excluir esta viagem?",
+            [
+                { text: "Cancelar", style: "cancel" },
+                {
+                    text: "Excluir",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await api.trips.delete(id);
+                            setTrips(prev => prev.filter(t => t.id !== id));
+                        } catch (error) {
+                            console.error('Error deleting trip:', error);
+                            Alert.alert('Erro', 'Não foi possível excluir a viagem.');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const [refreshing, setRefreshing] = useState(false);
@@ -179,11 +203,14 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
                             </View>
                         )}
                     </TouchableOpacity>
+
+                    <Text style={[styles.headerCenterTitle, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>Minhas Viagens</Text>
+
                     <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDark ? '#1e2a36' : '#f3f4f6' }]}>
                         <MaterialCommunityIcons name="cog" size={24} color={isDark ? COLORS.textLight : COLORS.textDark} />
                     </TouchableOpacity>
                 </View>
-                <Text style={[styles.headerTitle, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
+                <Text style={[styles.headerGreeting, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
                     Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
                 </Text>
 
@@ -272,7 +299,7 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
                                 </Text>
                             </TouchableOpacity>
                         ) : (
-                            <TripCard trip={item} isDark={isDark} />
+                            <TripCard trip={item} isDark={isDark} onDelete={() => handleDeleteTrip(item.id)} />
                         )
                     }
                     keyExtractor={(item) => item.id}
@@ -301,7 +328,7 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
     );
 };
 
-const TripCard: React.FC<{ trip: TripRow; isDark: boolean }> = ({ trip, isDark }) => (
+const TripCard: React.FC<{ trip: TripRow; isDark: boolean; onDelete: () => void }> = ({ trip, isDark, onDelete }) => (
     <TouchableOpacity
         style={[styles.card, { backgroundColor: isDark ? '#1e2a36' : '#ffffff' }]}
         activeOpacity={0.7}
@@ -324,6 +351,15 @@ const TripCard: React.FC<{ trip: TripRow; isDark: boolean }> = ({ trip, isDark }
                     <Text style={styles.badgeText}>{trip.status === 'planning' ? 'Planejando' : 'Em breve'}</Text>
                 </View>
             </View>
+            <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                }}
+            >
+                <MaterialCommunityIcons name="trash-can-outline" size={20} color="#ffffff" />
+            </TouchableOpacity>
         </View>
         <View style={styles.cardContent}>
             <View style={styles.cardInfo}>
@@ -331,8 +367,23 @@ const TripCard: React.FC<{ trip: TripRow; isDark: boolean }> = ({ trip, isDark }
                     {trip.destination}
                 </Text>
                 <Text style={[styles.cardDates, { color: isDark ? '#9ba8b8' : '#617589' }]}>
-                    {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date).toLocaleDateString()}
+                    {(() => {
+                        if (!trip.start_date || !trip.end_date) return '';
+                        const start = new Date(trip.start_date);
+                        const end = new Date(trip.end_date);
+                        const sDay = String(start.getDate() + 1).padStart(2, '0');
+                        const sMonth = String(start.getMonth() + 1).padStart(2, '0');
+                        const sYear = start.getFullYear();
+                        const eDay = String(end.getDate() + 1).padStart(2, '0');
+                        const eMonth = String(end.getMonth() + 1).padStart(2, '0');
+                        return `${sDay}/${sMonth} - ${eDay}/${eMonth} de ${sYear}`;
+                    })()}
                 </Text>
+                {trip.description && (
+                    <Text style={[styles.cardDescription, { color: isDark ? '#9ba8b8' : '#4b5563' }]} numberOfLines={2}>
+                        {trip.description}
+                    </Text>
+                )}
             </View>
             <TouchableOpacity style={styles.cardButton}>
                 <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.primary} />
@@ -374,6 +425,19 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         marginBottom: 8,
+    },
+    headerCenterTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    headerGreeting: {
+        fontSize: 24, // Reduced from 32
+        fontWeight: 'bold',
+        marginBottom: 12, // Increased margin
+    },
+    cardDescription: {
+        fontSize: 14,
+        marginTop: 4,
     },
     segmentedControl: {
         height: 40,
@@ -454,6 +518,17 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontSize: 12,
         fontWeight: '600',
+    },
+    deleteButton: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     cardContent: {
         flexDirection: 'row',

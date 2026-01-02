@@ -19,8 +19,10 @@ Armazena fotos de perfil dos usuários.
 - **RLS:** Autenticados podem fazer upload/update (apenas seus próprios arquivos, validado por nome da pasta/arquivo ou policy)
 - **Cache Busting:** O front-end (Web e Mobile) deve implementar cache busting appendando `?t=timestamp` à URL da imagem, pois o Supabase/CDN faz cache agressivo de arquivos com mesmo nome.
 
-#### `trip-images` (Planejado)
+#### `trip-images`
 Imagens de capa para viagens.
+- **Acesso:** Público (Leitura)
+- **RLS:** Autenticados podem fazer upload/update.
 
 #### `memories` (Planejado)
 Fotos privadas de memórias da viagem.
@@ -41,6 +43,7 @@ Armazena as viagens criadas pelos usuários.
 - `user_id`: FK para profiles (usuários podem ver apenas suas viagens)
 - `destination`: Destino da viagem
 - `status`: 'upcoming', 'planning', 'past'
+- `description`: Notas/Descrição da viagem (Opcional)
 
 #### `expenses`
 Despesas associadas a uma viagem.

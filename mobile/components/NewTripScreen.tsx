@@ -1,26 +1,30 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
-    TextInput,
     StyleSheet,
     TouchableOpacity,
+    TextInput,
     ScrollView,
     Image,
-    useColorScheme,
     KeyboardAvoidingView,
     Platform,
     Alert,
-    ActivityIndicator
+    useColorScheme,
+    ActivityIndicator,
+    Share
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
+import * as Contacts from 'expo-contacts';
+
 import { RootStackParamList } from '../types';
-import { IMAGES, COLORS } from '../constants';
-import { api } from '../services/api';
+import { COLORS, IMAGES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
+import { supabase } from '../lib/supabase';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NewTrip'>;
 
@@ -30,22 +34,40 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
     const isDark = colorScheme === 'dark';
 
     const [destination, setDestination] = useState('');
+    const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
+    const [coverImage, setCoverImage] = useState<string | null>(null);
 
-    // Calendar State
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    // Date Selection State
+    const [startDate, setStartDate] = useState<string | null>(null);
+    const [endDate, setEndDate] = useState<string | null>(null);
 
-    // Helper to handle date selection logic
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [16, 9],
+                quality: 0.8,
+            });
+
+            if (!result.canceled) {
+                setCoverImage(result.assets[0].uri);
+            }
+        } catch (e) {
+            Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
+        }
+    };
+
     const handleDateSelect = (date: string) => {
         if (!startDate || (startDate && endDate)) {
             setStartDate(date);
-            setEndDate('');
+            setEndDate(null);
         } else {
-            // Logic to ensure start before end
-            if (new Date(date) < new Date(startDate)) {
-                setEndDate(startDate);
+            // If selecting a date before start date, make it the new start date
+            if (date < startDate) {
                 setStartDate(date);
+                setEndDate(null);
             } else {
                 setEndDate(date);
             }
@@ -53,8 +75,49 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     const clearDates = () => {
-        setStartDate('');
-        setEndDate('');
+        setStartDate(null);
+        setEndDate(null);
+    };
+
+    const handleInvite = async () => {
+        try {
+            const result = await Share.share({
+                message: 'Vamos planejar sua próxima viagem com EasyTravel!',
+            });
+            if (result.action === Share.sharedAction) {
+                if (result.activityType) {
+                    // shared with activity type of result.activityType
+                } else {
+                    // shared
+                }
+            } else if (result.action === Share.dismissedAction) {
+                // dismissed
+            }
+        } catch (error: any) {
+            Alert.alert(error.message);
+        }
+    };
+
+    const handleAddParticipant = async () => {
+        try {
+            const { status } = await Contacts.requestPermissionsAsync();
+            if (status === 'granted') {
+                const { data } = await Contacts.getContactsAsync({
+                    fields: [Contacts.Fields.Emails, Contacts.Fields.PhoneNumbers],
+                });
+
+                if (data.length > 0) {
+                    Alert.alert('Funcionalidade em breve', 'A seleção de contatos será implementada com uma lista interativa.');
+                } else {
+                    Alert.alert('Atenção', 'Nenhum contato encontrado.');
+                }
+            } else {
+                Alert.alert('Permissão negada', 'Precisamos de acesso aos contatos para adicionar participantes.');
+            }
+        } catch (e) {
+            console.log(e);
+            Alert.alert('Adicionar', 'Simulação: Participante adicionado.');
+        }
     };
 
     const handleSave = async () => {
@@ -75,15 +138,46 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
 
         setLoading(true);
         try {
+            let imageUrl = IMAGES.genericMap;
+
+            if (coverImage) {
+                try {
+                    const response = await fetch(coverImage);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const fileExt = coverImage.split('.').pop()?.split('?')[0] || 'jpg';
+                    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+                    const filePath = `${fileName}`;
+
+                    const { error: uploadError } = await supabase.storage
+                        .from('trip-images')
+                        .upload(filePath, arrayBuffer, {
+                            contentType: response.headers.get('content-type') || 'image/jpeg',
+                            upsert: true,
+                        });
+
+                    if (uploadError) {
+                        console.error('Error uploading trip image:', uploadError);
+                    } else {
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('trip-images')
+                            .getPublicUrl(filePath);
+                        imageUrl = publicUrl;
+                    }
+                } catch (e) {
+                    console.error('Error reading/uploading image:', e);
+                }
+            }
+
             await api.trips.create({
                 destination,
                 start_date: startDate,
                 end_date: endDate,
                 user_id: user.id || 'unknown',
                 status: 'planning',
-                image_url: IMAGES.genericMap // Default image
+                image_url: imageUrl,
+                description: description
             });
-            // Close the modal properly
+
             navigation.goBack();
         } catch (error: any) {
             console.error('Error saving trip', error);
@@ -124,11 +218,6 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Headline */}
-                    <Text style={[styles.headline, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
-                        Vamos planejar sua{'\n'}próxima aventura?
-                    </Text>
-
                     {/* Destination Input */}
                     <View style={styles.section}>
                         <Text style={[styles.label, { color: isDark ? '#e5e7eb' : COLORS.textDark }]}>
@@ -144,6 +233,34 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                                 onChangeText={setDestination}
                             />
                         </View>
+                    </View>
+
+                    {/* Cover Image Picker */}
+                    <View style={styles.section}>
+                        <Text style={[styles.label, { color: isDark ? '#e5e7eb' : COLORS.textDark }]}>
+                            Imagem de Capa
+                        </Text>
+                        <TouchableOpacity onPress={pickImage} style={[styles.coverImageContainer, { backgroundColor: isDark ? '#1e2a36' : '#f0f2f5', borderColor: isDark ? '#2c3b4a' : '#e5e7eb' }]}>
+                            {coverImage ? (
+                                <View style={{ width: '100%', height: '100%' }}>
+                                    <Image source={{ uri: coverImage }} style={styles.coverImage} />
+                                    <TouchableOpacity
+                                        style={styles.removeImageButton}
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            setCoverImage(null);
+                                        }}
+                                    >
+                                        <MaterialCommunityIcons name="close" size={16} color="#fff" />
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <View style={styles.coverImagePlaceholder}>
+                                    <MaterialCommunityIcons name="image-plus" size={32} color={isDark ? '#64748b' : '#94a3b8'} />
+                                    <Text style={[styles.coverImageText, { color: isDark ? '#64748b' : '#94a3b8' }]}>Adicionar foto de capa</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
                     </View>
 
                     {/* Date Selection */}
@@ -175,8 +292,8 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
 
                         {/* Custom Calendar Component */}
                         <CustomCalendar
-                            startDate={startDate}
-                            endDate={endDate}
+                            startDate={startDate || ''}
+                            endDate={endDate || ''}
                             onSelectDate={handleDateSelect}
                             isDark={isDark}
                         />
@@ -188,7 +305,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                             <Text style={[styles.labelBig, { color: isDark ? '#e5e7eb' : COLORS.textDark }]}>
                                 Quem vai com você?
                             </Text>
-                            <TouchableOpacity style={styles.inviteButton}>
+                            <TouchableOpacity style={styles.inviteButton} onPress={handleInvite}>
                                 <MaterialCommunityIcons name="share-variant" size={18} color={COLORS.primary} />
                                 <Text style={styles.inviteText}>Convidar</Text>
                             </TouchableOpacity>
@@ -198,7 +315,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                             <Participant avatar={user?.user_metadata?.avatar_url || IMAGES.userAvatar} name="Você" isUser />
                             <Participant avatar={IMAGES.friend1} name="André" />
                             <Participant avatar={IMAGES.friend2} name="Sofia" />
-                            <TouchableOpacity style={styles.addParticipant}>
+                            <TouchableOpacity style={styles.addParticipant} onPress={handleAddParticipant}>
                                 <View style={[styles.addParticipantCircle, { borderColor: isDark ? '#64748b' : '#cbd5e1' }]}>
                                     <MaterialCommunityIcons name="plus" size={24} color={isDark ? '#64748b' : '#94a3b8'} />
                                 </View>
@@ -222,6 +339,8 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                                 multiline
                                 numberOfLines={4}
                                 textAlignVertical="top"
+                                value={description}
+                                onChangeText={setDescription}
                             />
                         </View>
                     </View>
@@ -325,7 +444,6 @@ const CustomCalendar: React.FC<{
                 ))}
 
                 {days.map((d) => {
-                    // Manual date construction to avoid timezone issues
                     const year = currentDate.getFullYear();
                     const month = String(currentDate.getMonth() + 1).padStart(2, '0');
                     const dayStr = String(d).padStart(2, '0');
@@ -338,7 +456,6 @@ const CustomCalendar: React.FC<{
                         <View key={d} style={styles.dayCell}>
                             {inRange && <View style={[styles.rangeBackground, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff' }]} />}
 
-                            {/* Connector Lines for visually connecting range to selected ends */}
                             {selected && startDate && endDate && startDate !== endDate && (
                                 <View style={[
                                     styles.rangeBackground,
@@ -375,20 +492,24 @@ const CustomCalendar: React.FC<{
     );
 };
 
+const Participant: React.FC<{ avatar: any; name: string; isUser?: boolean }> = ({ avatar, name, isUser }) => {
+    // Helper to handle avatar source (uri or local)
+    const imageSource = typeof avatar === 'string' ? { uri: avatar } : avatar;
 
-const Participant: React.FC<{ avatar: string; name: string; isUser?: boolean }> = ({ avatar, name, isUser }) => (
-    <View style={styles.participant}>
-        <View style={styles.participantImageContainer}>
-            <Image source={{ uri: avatar }} style={styles.participantImage} />
-            {isUser && (
-                <View style={styles.userBadge}>
-                    <Text style={styles.userBadgeText}>Eu</Text>
-                </View>
-            )}
+    return (
+        <View style={styles.participant}>
+            <View style={styles.participantImageContainer}>
+                <Image source={imageSource} style={styles.participantImage} />
+                {isUser && (
+                    <View style={styles.userBadge}>
+                        <Text style={styles.userBadgeText}>Eu</Text>
+                    </View>
+                )}
+            </View>
+            <Text style={styles.participantName}>{name}</Text>
         </View>
-        <Text style={styles.participantName}>{name}</Text>
-    </View>
-);
+    );
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -425,12 +546,6 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: 16,
-    },
-    headline: {
-        fontSize: 28,
-        fontWeight: '800',
-        lineHeight: 34,
-        marginBottom: 24,
     },
     section: {
         marginBottom: 24,
@@ -470,6 +585,38 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
     },
+    coverImageContainer: {
+        height: 180,
+        borderRadius: 12,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    coverImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    coverImagePlaceholder: {
+        alignItems: 'center',
+    },
+    coverImageText: {
+        marginTop: 8,
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    removeImageButton: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     dateDisplayRow: {
         flexDirection: 'row',
         gap: 12,
@@ -497,8 +644,6 @@ const styles = StyleSheet.create({
         color: COLORS.primary,
         fontWeight: '500',
     },
-
-    // Calendar Styles
     calendarContainer: {
         borderRadius: 16,
         padding: 16,
@@ -539,7 +684,7 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     dayCell: {
-        width: '14.28%', // 100% / 7 days
+        width: '14.28%',
         height: 40,
         alignItems: 'center',
         justifyContent: 'center',
@@ -576,7 +721,6 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontWeight: 'bold',
     },
-
     participantsScroll: {
         marginTop: 8,
     },
@@ -660,26 +804,21 @@ const styles = StyleSheet.create({
     footer: {
         padding: 16,
         borderTopWidth: 1,
-        borderTopColor: 'rgba(0,0,0,0.05)',
+        borderTopColor: '#e5e7eb',
     },
     createButton: {
+        backgroundColor: COLORS.primary,
+        borderRadius: 12,
+        height: 56,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: COLORS.primary,
-        height: 56,
-        borderRadius: 28,
-        elevation: 8,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
+        gap: 8,
     },
     createButtonText: {
         color: '#ffffff',
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
-        marginLeft: 8,
     },
 });
 

@@ -67,16 +67,20 @@ Escaneie o QR code com o app Expo Go ou execute:
 
 ### ✅ Implementadas
 - 🎨 Tela de boas-vindas
+- 🔐 Autenticação com Supabase (Login/Logout)
 - 📋 Lista de viagens (Próximas/Passadas)
-- ➕ Criar nova viagem
+- ➕ Criar nova viagem (com imagem de capa e descrição)
+- 🗑️ Exclusão de viagens
+- 📸 Upload de imagens (Avatar e Capa)
+- 🤝 Funcionalidades sociais (Convidar/Adicionar)
 - 🌓 Modo escuro/claro
-- 📱 Interface responsiva
+- 📱 Interface responsiva (Web e Mobile)
 
 ### 🚧 Em Desenvolvimento
-- 📸 Galeria de memórias
-- 💰 Controle de gastos
-- 👥 Compartilhamento de viagens
+- 👤 Tela de Perfil (Próximo passo)
+- 💰 Controle de gastos detalhado
 - 🔔 Notificações push
+- 📍 Mapa interativo
 
 ---
 

@@ -33,6 +33,21 @@ const TripListScreen: React.FC = () => {
     }
   };
 
+  const handleDeleteTrip = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (window.confirm('Tem certeza que deseja excluir esta viagem?')) {
+      try {
+        await api.trips.delete(id);
+        setTrips(prev => prev.filter(t => t.id !== id));
+      } catch (error) {
+        console.error('Error deleting trip:', error);
+        alert('Erro ao excluir viagem.');
+      }
+    }
+  };
+
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
@@ -131,12 +146,20 @@ const TripListScreen: React.FC = () => {
               </button>
             </div>
           </div>
-          <h1 className="text-[#111418] dark:text-white tracking-tight text-[32px] font-bold leading-tight">
-            Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
-          </h1>
+
+          <div className="flex justify-between items-end mb-2">
+            <div className="flex flex-col">
+              <h1 className="text-[#111418] dark:text-white text-lg font-bold">Minhas Viagens</h1>
+              <p className="text-[#111418] dark:text-white text-xl font-bold leading-tight mt-1">
+                Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
+              </p>
+            </div>
+          </div>
+
         </div>
         {/* Segmented Control */}
         <div className="px-4 pb-2">
+          {/* ... (keep existing segmented control) */}
           <div className="flex h-10 w-full items-center rounded-xl bg-[#f0f2f4] dark:bg-[#1e2a36] p-1 relative">
             <div
               className={`absolute left-1 h-8 bg-white dark:bg-[#2c3b4a] rounded-lg shadow-sm transition-all duration-300 ease-in-out w-[calc(50%-4px)] ${activeTab === 'past' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
@@ -164,7 +187,7 @@ const TripListScreen: React.FC = () => {
         </div>
       </header>
 
-      {/* Main List */}
+      {/* Main List - same as before until TripCard mapping */}
       <main className="flex-1 overflow-y-auto pb-28 px-4 space-y-4 no-scrollbar">
         {loading ? (
           <div className="flex justify-center py-10">
@@ -194,7 +217,7 @@ const TripListScreen: React.FC = () => {
                   }
                 })
                 .map((trip) => (
-                  <TripCard key={trip.id} trip={trip} />
+                  <TripCard key={trip.id} trip={trip} onDelete={(e) => handleDeleteTrip(e, trip.id)} />
                 ))
             ) : (
               <div className="text-center py-10 text-gray-500">
@@ -228,7 +251,7 @@ const TripListScreen: React.FC = () => {
         )}
       </main>
 
-      {/* FAB */}
+      {/* FAB - Same */}
       <div className="absolute bottom-24 right-4 z-20">
         <button
           onClick={() => navigate(AppRoute.NEW_TRIP)}
@@ -238,7 +261,7 @@ const TripListScreen: React.FC = () => {
         </button>
       </div>
 
-      {/* Bottom Nav */}
+      {/* Bottom Nav - Same */}
       <nav className="absolute bottom-0 left-0 w-full bg-white dark:bg-[#101922] border-t border-gray-100 dark:border-[#22303e] pb-safe pt-2 px-2 z-30">
         <div className="flex justify-around items-center h-16 pb-2">
           <NavItem icon="airplane_ticket" label="Viagens" active />
@@ -251,7 +274,31 @@ const TripListScreen: React.FC = () => {
   );
 };
 
-const TripCard: React.FC<{ trip: TripRow }> = ({ trip }) => (
+const formatDateRange = (start: string, end: string) => {
+  if (!start) return '';
+  const startDate = new Date(start);
+
+  // Format day/month
+  const formatPart = (date: Date) => {
+    return `${String(date.getDate() + 1).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  // Fix timezone offset issue simple hack (dates are YYYY-MM-DD)
+  // Actually, split is better
+  const sParts = start.split('-');
+  const eParts = end.split('-');
+
+  const sDay = sParts[2];
+  const sMonth = sParts[1];
+  const sYear = sParts[0];
+
+  const eDay = eParts[2];
+  const eMonth = eParts[1];
+
+  return `${sDay}/${sMonth} - ${eDay}/${eMonth} de ${sYear}`;
+};
+
+const TripCard: React.FC<{ trip: TripRow; onDelete: (e: React.MouseEvent) => void }> = ({ trip, onDelete }) => (
   <div className="group relative flex flex-col items-stretch justify-start rounded-2xl bg-white dark:bg-[#1e2a36] shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden transition-all hover:shadow-lg">
     <div
       className="w-full h-40 bg-center bg-no-repeat bg-cover relative"
@@ -265,18 +312,32 @@ const TripCard: React.FC<{ trip: TripRow }> = ({ trip }) => (
           {trip.status === 'planning' ? 'Planejando' : 'Em breve'}
         </span>
       </div>
+      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={onDelete}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white hover:bg-red-500 transition-colors backdrop-blur-md"
+          title="Excluir viagem"
+        >
+          <span className="material-symbols-outlined text-[18px]">delete</span>
+        </button>
+      </div>
     </div>
     <div className="flex flex-col gap-1 p-4">
       <div className="flex justify-between items-start">
-        <div>
+        <div className="flex-1">
           <h3 className="text-[#111418] dark:text-white text-xl font-bold leading-tight tracking-[-0.015em]">
             {trip.destination}
           </h3>
           <p className="text-[#617589] dark:text-[#9ba8b8] text-sm font-medium mt-1">
-            {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date).toLocaleDateString()}
+            {formatDateRange(trip.start_date, trip.end_date)}
           </p>
+          {trip.description && (
+            <p className="text-[#4b5563] dark:text-[#cbd5e1] text-sm mt-2 line-clamp-2">
+              {trip.description}
+            </p>
+          )}
         </div>
-        <button className="size-8 flex items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors">
+        <button className="size-8 flex items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors shrink-0 ml-2">
           <span className="material-symbols-outlined text-[20px]">chevron_right</span>
         </button>
       </div>
