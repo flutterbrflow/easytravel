@@ -75,8 +75,8 @@ Escaneie o QR code com o app Expo Go ou execute:
 ### 🚧 Em Desenvolvimento
 - 📸 Galeria de memórias
 - 💰 Controle de gastos
-- 📅 Calendário interativo
 - 👥 Compartilhamento de viagens
+- 🔔 Notificações push
 
 ---
 
@@ -88,6 +88,7 @@ Escaneie o QR code com o app Expo Go ou execute:
 - **Vite** 6.2.0
 - **React Router DOM** 7.11.0
 - **Tailwind CSS** (via CDN)
+- **Supabase** (Backend/Auth)
 
 ### Mobile
 - **React Native** (via Expo SDK 54)
@@ -95,6 +96,7 @@ Escaneie o QR code com o app Expo Go ou execute:
 - **Expo** ~54.0.0
 - **React Navigation** 7.x
 - **Expo Linear Gradient**
+- **Supabase** (Backend/Auth)
 
 ---
 

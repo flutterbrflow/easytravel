@@ -22,11 +22,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Carrega a sessão inicial
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setLoading(false);
         });
 
+        // Ouve mudanças no estado de autenticação
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -54,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
+        throw new Error('useAuth deve ser usado dentro de um AuthProvider');
     }
     return context;
 };

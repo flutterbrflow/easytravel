@@ -168,11 +168,11 @@ interface NavItemProps {
 ### Interações
 | Elemento | Ação | Resultado |
 |----------|------|-----------|
-| Tab "Próximas" | Click | Mostra viagens futuras |
-| Tab "Passadas" | Click | Mostra viagens passadas |
+| Tab "Próximas" | Click | Filtra a lista para exibir apenas viagens futuras ou em andamento |
+| Tab "Passadas" | Click | Filtra a lista para exibir apenas viagens encerradas |
 | FAB (+) | Click | Navega para `/new` |
 | Botão "Planejar nova" | Click | Navega para `/new` |
-| TripCard | Click | Placeholder (sem ação) |
+| TripCard | Click | Navega para detalhes (WIP) |
 
 ### Dados Mock
 Utiliza `MOCK_TRIPS` de `constants.ts`:
@@ -212,14 +212,15 @@ interface ParticipantProps {
 
 Renderiza avatar circular com nome e badge opcional "Eu".
 
-#### CalendarMock
-**Props:** Nenhuma
+#### Calendar (Custom)
+**Props:**
+- `startDate`: string
+- `endDate`: string
+- `onSelectDate`: (date: string) => void
 
-Renderiza calendário visual estático com:
-- Navegação mês (chevrons)
-- Grid 7x5 (dias da semana)
-- Range selection visual
-- Estados: normal, selected, in-range
+Renderiza um calendário interativo com seleção de período (range).
+- **Web:** Utiliza lógica customizada de seleção.
+- **Mobile:** Componente `CustomCalendar` nativo com `TouchableOpacity`.
 
 ### Estrutura Visual
 ```

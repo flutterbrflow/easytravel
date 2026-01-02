@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -15,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import { IMAGES, COLORS } from '../constants';
 import { api, TripRow } from '../services/api';
@@ -30,12 +30,15 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
 
-    useEffect(() => {
-        loadTrips();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadTrips();
+        }, [])
+    );
 
     const loadTrips = async () => {
         try {
+            // setLoading(true); // Optional: if we want to show spinner every time
             const data = await api.trips.list();
             setTrips(data);
         } catch (error) {
@@ -112,9 +115,21 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.emptyContainer}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
                 </View>
-            ) : activeTab === 'upcoming' ? (
+            ) : (
                 <FlatList
-                    data={[...trips, { id: 'add-new' }] as any}
+                    data={[
+                        ...trips.filter(t => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const tripEnd = new Date(t.end_date);
+                            if (activeTab === 'upcoming') {
+                                return tripEnd >= today;
+                            } else {
+                                return tripEnd < today;
+                            }
+                        }),
+                        ...(activeTab === 'upcoming' ? [{ id: 'add-new' }] : [])
+                    ] as any}
                     renderItem={({ item }) =>
                         item.id === 'add-new' ? (
                             <TouchableOpacity
@@ -138,12 +153,15 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <MaterialCommunityIcons name={activeTab === 'upcoming' ? "map-search" : "history"} size={48} color="#9ca3af" />
+                            <Text style={styles.emptyText}>
+                                {activeTab === 'upcoming' ? 'Nenhuma viagem próxima.' : 'Nenhuma viagem passada recente.'}
+                            </Text>
+                        </View>
+                    }
                 />
-            ) : (
-                <View style={styles.emptyContainer}>
-                    <MaterialCommunityIcons name="history" size={48} color="#9ca3af" />
-                    <Text style={styles.emptyText}>Nenhuma viagem passada recente.</Text>
-                </View>
             )}
 
             {/* FAB */}

@@ -42,5 +42,5 @@ export const api = {
         }
     },
 
-    // Placeholder for other services
+    // Placeholder para outros serviços (Despesas, Memórias)
 };

@@ -23,14 +23,24 @@ const LoginScreen: React.FC = () => {
                     email,
                     password,
                 });
-                if (error) throw error;
+                if (error) {
+                    if (error.message.includes('User already registered')) {
+                        throw new Error('Usuário já cadastrado.');
+                    }
+                    throw error;
+                }
                 alert('Verifique seu email para confirmar o cadastro!');
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
                     password,
                 });
-                if (error) throw error;
+                if (error) {
+                    if (error.message.includes('Invalid login credentials')) {
+                        throw new Error('Email ou senha inválidos.');
+                    }
+                    throw error;
+                }
                 navigate('/list');
             }
         } catch (err: any) {

@@ -60,8 +60,8 @@ const TripListScreen: React.FC = () => {
             <button
               onClick={() => setActiveTab('upcoming')}
               className={`relative z-10 flex-1 h-full flex items-center justify-center rounded-lg text-sm font-semibold transition-colors ${activeTab === 'upcoming'
-                  ? 'text-[#111418] dark:text-white'
-                  : 'text-[#617589] dark:text-[#9ba8b8] hover:text-[#111418] dark:hover:text-white'
+                ? 'text-[#111418] dark:text-white'
+                : 'text-[#617589] dark:text-[#9ba8b8] hover:text-[#111418] dark:hover:text-white'
                 }`}
             >
               Próximas
@@ -69,8 +69,8 @@ const TripListScreen: React.FC = () => {
             <button
               onClick={() => setActiveTab('past')}
               className={`relative z-10 flex-1 h-full flex items-center justify-center rounded-lg text-sm font-semibold transition-colors ${activeTab === 'past'
-                  ? 'text-[#111418] dark:text-white'
-                  : 'text-[#617589] dark:text-[#9ba8b8] hover:text-[#111418] dark:hover:text-white'
+                ? 'text-[#111418] dark:text-white'
+                : 'text-[#617589] dark:text-[#9ba8b8] hover:text-[#111418] dark:hover:text-white'
                 }`}
             >
               Passadas
@@ -85,35 +85,61 @@ const TripListScreen: React.FC = () => {
           <div className="flex justify-center py-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
-        ) : activeTab === 'upcoming' ? (
+        ) : (
           <>
-            {trips.length > 0 ? trips.map((trip) => (
-              <TripCard key={trip.id} trip={trip} />
-            )) : (
+            {trips.filter(t => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const tripEnd = new Date(t.end_date);
+              if (activeTab === 'upcoming') {
+                return tripEnd >= today;
+              } else {
+                return tripEnd < today;
+              }
+            }).length > 0 ? (
+              trips
+                .filter(t => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const tripEnd = new Date(t.end_date);
+                  if (activeTab === 'upcoming') {
+                    return tripEnd >= today;
+                  } else {
+                    return tripEnd < today;
+                  }
+                })
+                .map((trip) => (
+                  <TripCard key={trip.id} trip={trip} />
+                ))
+            ) : (
               <div className="text-center py-10 text-gray-500">
-                <p>Nenhuma viagem planejada.</p>
+                <span className="material-symbols-outlined text-4xl mb-2">
+                  {activeTab === 'upcoming' ? 'map_search' : 'history'}
+                </span>
+                <p>
+                  {activeTab === 'upcoming'
+                    ? 'Nenhuma viagem planejada.'
+                    : 'Nenhuma viagem passada recente.'}
+                </p>
               </div>
             )}
 
-            {/* Add New Trip Button (Inline) */}
-            <button
-              onClick={() => navigate(AppRoute.NEW_TRIP)}
-              className="w-full border-2 border-dashed border-[#e5e7eb] dark:border-[#2c3b4a] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 text-center hover:bg-gray-50 dark:hover:bg-[#1a232e] transition-colors group"
-            >
-              <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-[28px]">add_location_alt</span>
-              </div>
-              <div>
-                <p className="text-[#111418] dark:text-white font-semibold">Planejar nova aventura</p>
-                <p className="text-[#617589] dark:text-[#9ba8b8] text-xs">Descubra novos destinos</p>
-              </div>
-            </button>
+            {/* Add New Trip Button (Inline) - Only for Upcoming */}
+            {activeTab === 'upcoming' && (
+              <button
+                onClick={() => navigate(AppRoute.NEW_TRIP)}
+                className="w-full border-2 border-dashed border-[#e5e7eb] dark:border-[#2c3b4a] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 text-center hover:bg-gray-50 dark:hover:bg-[#1a232e] transition-colors group"
+              >
+                <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-[28px]">add_location_alt</span>
+                </div>
+                <div>
+                  <p className="text-[#111418] dark:text-white font-semibold">Planejar nova aventura</p>
+                  <p className="text-[#617589] dark:text-[#9ba8b8] text-xs">Descubra novos destinos</p>
+                </div>
+              </button>
+            )}
           </>
-        ) : (
-          <div className="text-center py-10 text-gray-500">
-            <span className="material-symbols-outlined text-4xl mb-2">history</span>
-            <p>Nenhuma viagem passada recente.</p>
-          </div>
         )}
       </main>
 

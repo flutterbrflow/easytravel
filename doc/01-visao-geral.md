@@ -65,8 +65,9 @@ easytravel/
 ✅ Interface Web Responsiva  
 ✅ Modo Escuro/Claro  
 ✅ Design Mobile-First  
-🚧 Conversão para React Native em andamento  
-📱 Futuras features: Sincronização, Backend, Autenticação
+✅ Integração Supabase (Web e Mobile)
+🚧 Refinamento da UI Mobile (Fases finais)
+📱 Futuras features: Galeria de Memórias, Notificações
 
 ## Licença
 

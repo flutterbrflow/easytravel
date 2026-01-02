@@ -26,7 +26,12 @@ const LoginScreen = () => {
                     email,
                     password,
                 });
-                if (error) throw error;
+                if (error) {
+                    if (error.message.includes('User already registered')) {
+                        throw new Error('Usuário já cadastrado.');
+                    }
+                    throw error;
+                }
                 Alert.alert('Sucesso', 'Verifique seu email para confirmar o cadastro!', [
                     { text: 'OK', onPress: () => setIsSignUp(false) }
                 ]);
@@ -35,7 +40,12 @@ const LoginScreen = () => {
                     email,
                     password,
                 });
-                if (error) throw error;
+                if (error) {
+                    if (error.message.includes('Invalid login credentials')) {
+                        throw new Error('Email ou senha inválidos.');
+                    }
+                    throw error;
+                }
                 // Navigation is handled by App.tsx observing session state normally, 
                 // but explicit nav works too if we stack it right.
                 navigation.reset({
