@@ -239,16 +239,17 @@ Utiliza `MOCK_TRIPS` de `constants.ts`:
 Componente responsável por gerenciar e visualizar o orçamento da viagem, exibindo gráficos de gastos e lista de transações.
 
 ### Características
-- **Filtros de Tempo:** Todo o período, Hoje, Semana, Mês.
+- **Filtros de Tempo:** Todo o período, Hoje, Semana (últimos 7 dias), Mês (últimos 30 dias).
 - **Configuração de Orçamento:** Modal para definir o valor total do orçamento.
 - **Visualização Gráfica:**
   - Card de Saldo Disponível com barra de progresso.
   - Gráfico de distribuição por categorias.
-- **Lista de Transações:** Agrupada por data, com ícones de categoria e valores formatados.
+- **Lista de Transações:** Agrupada por data (YYYY-MM-DD), com ícones de categoria e valores formatados.
 - **Interações:**
-  - Adicionar nova despesa (FAB).
+  - Adicionar nova despesa (FAB sticky/fixed).
   - Editar despesa existente (clique no card).
   - Excluir despesa.
+  - **Pull-to-Refresh** (Mobile): Atualizar dados arrastando a lista.
 
 ### Props
 ```typescript
@@ -258,6 +259,7 @@ interface BudgetTabProps {
     onAddExpense: () => void;
     onEditExpense: (expense: ExpenseRow) => void;
     onDeleteExpense: (id: string) => void;
+    onRefresh?: () => void; // Mobile only
 }
 ```
 
@@ -274,8 +276,8 @@ Modal para adicionar ou editar despesas.
 ### Características
 - Formulário com campos validação.
 - Seleção de categoria com ícones visuais.
-- Suporte a input de valor com vírgula ou ponto.
-- Datepicker para data da despesa.
+- Suporte a input de valor com vírgula ou ponto (Placeholder estilizado).
+- **CustomCalendar:** Calendário inline para seleção de data (Single Date).
 
 ---
 

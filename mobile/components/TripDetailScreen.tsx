@@ -13,7 +13,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     Share,
-    useColorScheme
+    useColorScheme,
+    RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -155,6 +156,7 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
     const isDark = colorScheme === 'dark'; // Derived isDark from colorScheme
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [refreshing, setRefreshing] = useState(false); // Add refreshing state
 
     // Expenses State
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -172,9 +174,14 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
     const [editEndDate, setEditEndDate] = useState<string | null>(null);
     const [editCoverImage, setEditCoverImage] = useState<string | null>(null);
 
-    const loadData = async () => {
+    const loadData = async (isRefresh = false) => {
         try {
-            setLoading(true);
+            if (isRefresh) {
+                setRefreshing(true);
+            } else {
+                setLoading(true);
+            }
+
             const [tripData, expensesData, memoriesData] = await Promise.all([
                 api.trips.get(tripId),
                 api.expenses.list(tripId),
@@ -197,6 +204,7 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
             console.error('Error loading trip details:', error);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
@@ -433,7 +441,12 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                 </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.content}>
+            <ScrollView
+                style={styles.content}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} tintColor={COLORS.primary} />
+                }
+            >
                 {activeTab === 'overview' && (
                     <KeyboardAvoidingView
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -587,7 +600,7 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                         onAddExpense={handleOpenAddExpense}
                         onEditExpense={handleEditExpense}
                         onDeleteExpense={handleDeleteExpense}
-                        onRefresh={loadData}
+                        onRefresh={() => loadData(true)}
                     />
                 )}
                 {activeTab === 'memories' && (

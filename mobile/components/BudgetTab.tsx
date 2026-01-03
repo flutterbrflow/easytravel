@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Modal, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Modal, TextInput, ActivityIndicator, Alert, Platform, RefreshControl } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants';
 import { ExpenseRow, TripRow, api } from '../services/api';
@@ -48,15 +48,26 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
     const filteredExpenses = useMemo(() => {
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        // Last 7 days
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - 7);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        // Last 30 days
+        const startOfMonth = new Date(now);
+        startOfMonth.setDate(now.getDate() - 30);
+        startOfMonth.setHours(0, 0, 0, 0);
 
         return expenses.filter(e => {
-            const date = new Date(e.date);
+            // Strip time for comparison
+            const expFull = new Date(e.date + 'T12:00:00'); // Safety for YYYY-MM-DD
+            const exp = new Date(expFull.getFullYear(), expFull.getMonth(), expFull.getDate());
+
             switch (filter) {
-                case 'today': return date >= startOfDay;
-                case 'week': return date >= startOfWeek;
-                case 'month': return date >= startOfMonth;
+                case 'today': return exp.getTime() === startOfDay.getTime();
+                case 'week': return exp >= new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate());
+                case 'month': return exp >= new Date(startOfMonth.getFullYear(), startOfMonth.getMonth(), startOfMonth.getDate());
                 default: return true; // 'period' = all
             }
         });
@@ -83,9 +94,11 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
     const groupedTransactions = useMemo(() => {
         const groups: Record<string, ExpenseRow[]> = {};
         filteredExpenses.forEach(e => {
-            const dateStr = new Date(e.date).toLocaleDateString('pt-BR'); // Simplified date key
-            // Better formatting logic needed for "Hoje", "Ontem"
-            // For now simple string
+            // Fix timezone issue: Manual parse YYYY-MM-DD
+            // e.date comes from DB as YYYY-MM-DD
+            const [year, month, day] = e.date.split('-');
+            const dateStr = `${day}/${month}/${year}`;
+
             if (!groups[dateStr]) groups[dateStr] = [];
             groups[dateStr].push(e);
         });
@@ -123,105 +136,133 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
         }
     };
 
+    // Refresh State
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefreshHandler = async () => {
+        if (onRefresh) {
+            setRefreshing(true);
+            await onRefresh();
+            setRefreshing(false);
+        }
+    };
+
+    const renderFilter = (f: TimeFilter, label: string) => (
+        <TouchableOpacity
+            key={f}
+            onPress={() => setFilter(f)}
+            style={[styles.pill, filter === f && styles.pillActive]}
+        >
+            <Text style={[styles.pillText, filter === f && styles.pillTextActive]}>{label}</Text>
+        </TouchableOpacity>
+    );
+
     return (
         <View style={styles.container}>
             {/* 1. Filters */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContainer}>
-                <FilterPill label="Todo o Período" value="period" />
-                <FilterPill label="Hoje" value="today" />
-                <FilterPill label="Semana" value="week" />
-                <FilterPill label="Mês" value="month" />
-            </ScrollView>
-
-            {/* 2. Balance Card */}
-            <View style={styles.balanceCard}>
-                <View style={styles.balanceHeader}>
-                    <Text style={styles.balanceLabel}>SALDO DISPONÍVEL (GLOBAL)</Text>
-                    <Ionicons name="wallet-outline" size={24} color={COLORS.primary} />
-                </View>
-                <Text style={styles.balanceValue}>R$ {available.toFixed(2).replace('.', ',')}</Text>
-
-                <View style={styles.progressRow}>
-                    <Text style={styles.progressLabel}>Utilizado (Vista): <Text style={{ fontWeight: 'bold' }}>R$ {totalSpent.toFixed(2)}</Text></Text>
-                    <Text style={styles.progressLabel}>Total: R$ {budget / 1000}k</Text>
-                </View>
-                <View style={styles.progressBarBg}>
-                    <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
-                </View>
-                <Text style={styles.percentageText}>{Math.round(progress * 100)}% DO ORÇAMENTO TOTAL</Text>
+            <View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContainer}>
+                    {renderFilter('period', 'Todo o Período')}
+                    {renderFilter('today', 'Hoje')}
+                    {renderFilter('week', 'Semana')}
+                    {renderFilter('month', 'Mês')}
+                </ScrollView>
             </View>
 
-            {/* 3. Category Cards */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll} contentContainerStyle={{ paddingHorizontal: 16 }}>
-                {categoryStats.map(stat => (
-                    <View key={stat.name} style={styles.categoryCard}>
-                        <View style={[styles.iconCircle, { backgroundColor: getCategoryColor(stat.name) + '20' }]}>
-                            <MaterialCommunityIcons name={getCategoryIcon(stat.name) as any} size={24} color={getCategoryColor(stat.name)} />
-                        </View>
-                        <Text style={styles.catCardName}>{stat.name}</Text>
-                        <Text style={styles.catCardValue}>R$ {stat.total.toFixed(0)}</Text>
+            <View style={{ flex: 1 }}>
+                {/* 2. Balance Card */}
+                <View style={styles.balanceCard}>
+                    <View style={styles.balanceHeader}>
+                        <Text style={styles.balanceLabel}>SALDO DISPONÍVEL (GLOBAL)</Text>
+                        <Ionicons name="wallet-outline" size={24} color={COLORS.primary} />
                     </View>
-                ))}
-            </ScrollView>
+                    <Text style={styles.balanceValue}>R$ {available.toFixed(2).replace('.', ',')}</Text>
 
-            {/* 4. Distribution */}
-            <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Distribuição</Text>
-                <TouchableOpacity onPress={() => { setNewBudget(trip.budget?.toString() || ''); setIsBudgetModalOpen(true); }}>
-                    <Text style={styles.configureText}>CONFIGURAR</Text>
-                </TouchableOpacity>
-            </View>
-            <View style={styles.distributionCard}>
-                {categoryStats.map(stat => (
-                    <View key={stat.name} style={styles.distRow}>
-                        <View style={styles.distHeader}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={[styles.dot, { backgroundColor: getCategoryColor(stat.name) }]} />
-                                <Text style={styles.distName}>{stat.name}</Text>
-                            </View>
-                            <Text style={styles.distPercent}>{Math.round(stat.percent * 100)}%</Text>
-                        </View>
-                        <View style={styles.distBarBg}>
-                            <View style={[styles.distBarFill, { width: `${stat.percent * 100}%`, backgroundColor: getCategoryColor(stat.name) }]} />
-                        </View>
+                    <View style={styles.progressRow}>
+                        <Text style={styles.progressLabel}>Utilizado (Vista): <Text style={{ fontWeight: 'bold' }}>R$ {totalSpent.toFixed(2)}</Text></Text>
+                        <Text style={styles.progressLabel}>Total: R$ {budget.toFixed(2)}</Text>
                     </View>
-                ))}
-            </View>
+                    <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+                    </View>
+                    <Text style={styles.percentageText}>{Math.round(progress * 100)}% DO ORÇAMENTO TOTAL</Text>
+                </View>
 
-            {/* 5. Transactions */}
-            <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Transações</Text>
-            </View>
-
-            {Object.entries(groupedTransactions).map(([date, list]) => (
-                <View key={date}>
-                    <Text style={styles.dateHeader}>{date}</Text>
-                    {list.map(expense => (
-                        <TouchableOpacity
-                            key={expense.id}
-                            style={styles.transactionCard}
-                            onPress={() => onEditExpense(expense)}
-                        >
-                            <View style={styles.transLeft}>
-                                <View style={styles.transIconBox}>
-                                    <MaterialCommunityIcons name={getCategoryIcon(expense.category) as any} size={24} color="#666" />
-                                </View>
-                                <View>
-                                    <Text style={styles.transTitle}>{expense.description}</Text>
-                                    <Text style={styles.transCat}>{expense.category}</Text>
-                                </View>
+                {/* 3. Category Cards */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Categorias</Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll} contentContainerStyle={{ paddingHorizontal: 16 }}>
+                    {categoryStats.map(stat => (
+                        <View key={stat.name} style={styles.categoryCard}>
+                            <View style={[styles.iconCircle, { backgroundColor: getCategoryColor(stat.name) + '20' }]}>
+                                <MaterialCommunityIcons name={getCategoryIcon(stat.name) as any} size={24} color={getCategoryColor(stat.name)} />
                             </View>
-                            <Text style={styles.transAmount}>- R$ {Number(expense.amount).toFixed(2).replace('.', ',')}</Text>
-                            <TouchableOpacity onPress={() => onDeleteExpense(expense.id)} style={styles.deleteButton}>
-                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                            </TouchableOpacity>
-                        </TouchableOpacity>
+                            <Text style={styles.catCardName}>{stat.name}</Text>
+                            <Text style={styles.catCardValue}>R$ {stat.total.toFixed(0)}</Text>
+                        </View>
                     ))}
-                </View>
-            ))}
+                </ScrollView>
 
-            {/* Spacer for FAB */}
-            <View style={{ height: 80 }} />
+                {/* 4. Distribution */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Distribuição</Text>
+                    <TouchableOpacity onPress={() => { setNewBudget(trip.budget?.toString() || ''); setIsBudgetModalOpen(true); }}>
+                        <Text style={styles.configureText}>CONFIGURAR</Text>
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.distributionCard}>
+                    {categoryStats.map(stat => (
+                        <View key={stat.name} style={styles.distRow}>
+                            <View style={styles.distHeader}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={[styles.dot, { backgroundColor: getCategoryColor(stat.name) }]} />
+                                    <Text style={styles.distName}>{stat.name}</Text>
+                                </View>
+                                <Text style={styles.distPercent}>{Math.round(stat.percent * 100)}%</Text>
+                            </View>
+                            <View style={styles.distBarBg}>
+                                <View style={[styles.distBarFill, { width: `${stat.percent * 100}%`, backgroundColor: getCategoryColor(stat.name) }]} />
+                            </View>
+                        </View>
+                    ))}
+                    {categoryStats.length === 0 && <Text style={{ textAlign: 'center', color: '#9CA3AF', marginVertical: 10 }}>Nenhuma despesa</Text>}
+                </View>
+
+                {/* 5. Transactions */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Transações</Text>
+                </View>
+
+                {Object.entries(groupedTransactions).map(([date, list]) => (
+                    <View key={date}>
+                        <Text style={styles.dateHeader}>{date}</Text>
+                        {list.map(expense => (
+                            <TouchableOpacity
+                                key={expense.id}
+                                style={styles.transactionCard}
+                                onPress={() => onEditExpense(expense)}
+                            >
+                                <View style={styles.transLeft}>
+                                    <View style={styles.transIconBox}>
+                                        <MaterialCommunityIcons name={getCategoryIcon(expense.category) as any} size={24} color="#666" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.transTitle}>{expense.description}</Text>
+                                        <Text style={styles.transCat}>{expense.category}</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.transAmount}>- R$ {Number(expense.amount).toFixed(2).replace('.', ',')}</Text>
+                                <TouchableOpacity onPress={() => onDeleteExpense(expense.id)} style={styles.deleteButton}>
+                                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                </TouchableOpacity>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                ))}
+
+                <View style={{ height: 80 }} />
+            </View>
 
             {/* FAB */}
             <TouchableOpacity
@@ -230,6 +271,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
             >
                 <Ionicons name="add" size={32} color="#fff" />
             </TouchableOpacity>
+
             {/* Budget Configuration Modal */}
             <Modal
                 visible={isBudgetModalOpen}
@@ -359,7 +401,7 @@ const styles = StyleSheet.create({
 
     // Distribution
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, marginBottom: 12 },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
+    sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
     configureText: { fontSize: 12, fontWeight: 'bold', color: COLORS.primary },
     distributionCard: {
         marginHorizontal: 16,
@@ -391,7 +433,7 @@ const styles = StyleSheet.create({
     transLeft: { flexDirection: 'row', alignItems: 'center' },
     transIconBox: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
     transTitle: { fontSize: 14, fontWeight: 'bold', color: '#111827', marginBottom: 2 },
-    transCat: { fontSize: 11, color: '#9CA3AF' },
+    transCat: { fontSize: 11, color: '#9CA3AF', textTransform: 'uppercase' },
     transAmount: { fontSize: 14, fontWeight: 'bold', color: '#EF4444' },
     deleteButton: { padding: 8, marginLeft: 8 },
 

@@ -72,7 +72,9 @@ easytravel/
 ✅ Upload de Imagens (Capa de viagem, Avatar)
 ✅ Filtros de Viagens (Próximas, Realizadas)
 🚧 Refinamento de UI/UX em andamento
-🚧 Módulo de Gastos e Memórias (Em desenvolvimento)
+✅ Módulo de Gastos (Cadastro, Filtros, Gráficos)
+✅ Módulo de Memórias (Visualização básica)
+🚧 Sincronização offline-first (Em desenvolvimento)
 
 ## Licença
 

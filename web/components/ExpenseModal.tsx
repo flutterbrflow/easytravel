@@ -33,7 +33,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     const [category, setCategory] = useState(CATEGORIES[0].id);
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -146,28 +145,12 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
                     {/* Data */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data</label>
-                        <button
-                            type="button"
-                            onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                            className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#15202b] border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                        >
-                            <span>{date ? date.split('-').reverse().join('/') : 'Selecione a data'}</span>
-                            <span className="material-symbols-outlined text-gray-500">calendar_today</span>
-                        </button>
-
-                        {isCalendarOpen && (
-                            <div className="mt-2 animate-in fade-in zoom-in duration-200">
-                                <CustomCalendar
-                                    startDate={date}
-                                    endDate=""
-                                    onSelectDate={(d) => {
-                                        setDate(d);
-                                        setIsCalendarOpen(false);
-                                    }}
-                                />
-                            </div>
-                        )}
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data</label>
+                        <CustomCalendar
+                            startDate={date}
+                            endDate=""
+                            onSelectDate={(d) => setDate(d)}
+                        />
                     </div>
 
                     <div className="pt-4">

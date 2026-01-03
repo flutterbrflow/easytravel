@@ -15,7 +15,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants';
 import { ExpenseRow, ExpenseInsert } from '../services/api';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import CustomCalendar from './CustomCalendar';
 
 interface ExpenseModalProps {
     visible: boolean;
@@ -49,7 +49,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState(CATEGORIES[0].id);
     const [date, setDate] = useState(new Date());
-    const [showDatePicker, setShowDatePicker] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -93,12 +92,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         }
     };
 
-    const handleDateChange = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(false);
-        if (selectedDate) {
-            setDate(selectedDate);
-        }
-    };
+    // handleDateChange removed because CustomCalendar uses onSelectDate directly
 
     const styles = StyleSheet.create({
         centeredView: {
@@ -163,8 +157,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         amountInput: {
             flex: 1,
             paddingVertical: 16,
-            fontSize: 24,
-            fontWeight: 'bold',
+            fontSize: 16,
             color: isDark ? '#fff' : '#111418',
         },
         categoriesGrid: {
@@ -296,19 +289,12 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
                             {/* Data */}
                             <Text style={styles.label}>Data</Text>
-                            <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
-                                <MaterialCommunityIcons name="calendar" size={20} color={isDark ? '#9ca3af' : '#6b7280'} />
-                                <Text style={styles.dateText}>{date.toLocaleDateString()}</Text>
-                            </TouchableOpacity>
-
-                            {showDatePicker && (
-                                <DateTimePicker
-                                    value={date}
-                                    mode="date"
-                                    display="default"
-                                    onChange={handleDateChange}
-                                />
-                            )}
+                            <CustomCalendar
+                                startDate={date.toISOString().split('T')[0]}
+                                endDate=""
+                                onSelectDate={(selectedDate) => setDate(new Date(selectedDate))}
+                                isDark={isDark}
+                            />
 
                             {/* Salvar */}
                             <TouchableOpacity

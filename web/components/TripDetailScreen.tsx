@@ -6,6 +6,7 @@ import BudgetTab from './BudgetTab'; // Dashboard Component
 import { AppRoute } from '../types';
 import { IMAGES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
+import CustomCalendar from './CustomCalendar';
 
 // --- Helper Components ---
 
@@ -15,117 +16,8 @@ interface CalendarProps {
     onSelectDate: (date: string) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ startDate, endDate, onSelectDate }) => {
-    const [currentDate, setCurrentDate] = useState(new Date());
+// Local Calendar component definition removed
 
-    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Sunday
-
-    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-    const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-
-    const monthNames = [
-        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-    ];
-
-    const handlePrevMonth = () => {
-        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-    };
-
-    const handleNextMonth = () => {
-        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-    };
-
-    const isSelected = (day: number) => {
-        const year = currentDate.getFullYear();
-        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const dayStr = String(day).padStart(2, '0');
-        const dateStr = `${year}-${month}-${dayStr}`;
-        return dateStr === startDate || dateStr === endDate;
-    };
-
-    const isInRange = (day: number) => {
-        if (!startDate || !endDate) return false;
-        const currentStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        return currentStr > startDate && currentStr < endDate;
-    };
-
-    const handleDateClick = (day: number) => {
-        const year = currentDate.getFullYear();
-        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const dayStr = String(day).padStart(2, '0');
-        const dateStr = `${year}-${month}-${dayStr}`;
-        onSelectDate(dateStr);
-    };
-
-    return (
-        <div className="bg-white dark:bg-[#1e2a36] rounded-2xl p-4 shadow-sm w-full border border-gray-100 dark:border-gray-800">
-            <div className="flex items-center justify-between mb-4 px-2">
-                <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                    <span className="material-symbols-outlined text-[#111418] dark:text-white text-[20px]">chevron_left</span>
-                </button>
-                <p className="text-[#111418] dark:text-white text-base font-bold leading-tight capitalize">
-                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </p>
-                <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                    <span className="material-symbols-outlined text-[#111418] dark:text-white text-[20px]">chevron_right</span>
-                </button>
-            </div>
-            <div className="grid grid-cols-7 gap-y-2">
-                {weekDays.map((d, i) => (
-                    <p key={i} className="text-slate-400 dark:text-slate-500 text-[13px] font-bold text-center pb-2">
-                        {d}
-                    </p>
-                ))}
-                {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                    <div key={`empty-${i}`} />
-                ))}
-                {days.map((d) => {
-                    const selected = isSelected(d);
-                    const inRange = isInRange(d);
-                    const isStart = startDate && new Date(startDate).getDate() === d && new Date(startDate).getMonth() === currentDate.getMonth();
-                    // Better verify properly:
-                    const year = currentDate.getFullYear();
-                    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-                    const dayStr = String(d).padStart(2, '0');
-                    const dateStr = `${year}-${month}-${dayStr}`;
-                    const isStartDate = dateStr === startDate;
-
-                    let baseClasses = "h-10 w-full text-sm font-medium rounded-full transition-all relative z-10 ";
-
-                    if (selected) {
-                        baseClasses += "bg-blue-600 text-white shadow-md shadow-blue-500/30";
-                    } else if (inRange) {
-                        baseClasses += "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-none";
-                        // Rounding
-                        if (isSelected(d - 1)) baseClasses += " rounded-l-none";
-                        if (isSelected(d + 1)) baseClasses += " rounded-r-none";
-                    } else {
-                        baseClasses += "text-[#111418] dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700";
-                    }
-
-                    return (
-                        <div key={d} className="relative p-0.5">
-                            {inRange && (
-                                <div className="absolute inset-y-0.5 left-0 right-0 bg-blue-50 dark:bg-blue-900/20 z-0" />
-                            )}
-                            {selected && startDate && endDate && startDate !== endDate && (
-                                <div className={`absolute inset-y-0.5 w-[50%] bg-blue-50 dark:bg-blue-900/20 z-0 ${isStartDate ? 'right-0' : 'left-0'}`} />
-                            )}
-                            <button
-                                onClick={() => handleDateClick(d)}
-                                className={baseClasses}
-                            >
-                                {d}
-                            </button>
-                        </div>
-                    )
-                })}
-            </div>
-        </div>
-    );
-};
 
 const TripDetailScreen: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -455,7 +347,7 @@ const TripDetailScreen: React.FC = () => {
                                 </div>
                             </div>
 
-                            <Calendar
+                            <CustomCalendar
                                 startDate={editStartDate || ''}
                                 endDate={editEndDate || ''}
                                 onSelectDate={handleDateSelect}

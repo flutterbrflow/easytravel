@@ -220,7 +220,8 @@ O EasyTravel se adapta automaticamente ao tema do seu sistema:
 *Funcionalidade em desenvolvimento. Em breve será possível gerenciar viagens existentes.*
 
 ### ❓ Como adicionar fotos?
-*A funcionalidade de galeria de memórias está em desenvolvimento.*
+### ❓ Como adicionar fotos?
+*Você pode adicionar fotos na aba "Memórias" (ícone de fotos) dentro de cada viagem.*
 
 ### ❓ Posso usar offline?
 *Atualmente o app requer conexão. Modo offline planejado para futuras versões.*
@@ -244,9 +245,10 @@ O EasyTravel se adapta automaticamente ao tema do seu sistema:
 | ✅ Perfil de Usuário | Implementado |
 | ✅ Upload de Avatar | Implementado |
 | ✅ Controle de gastos | Implementado |
-| 🚧 Galeria de fotos | Em desenvolvimento |
-| 🚧 Editar viagem | Em desenvolvimento |
-| 🚧 Excluir viagem | Em desenvolvimento |
+| ✅ Filtros de tempo | Implementado |
+| ✅ Galeria de memórias | Implementado (Básico) |
+| ✅ Editar viagem | Implementado |
+| ✅ Excluir viagem | Implementado |
 | ✅ Autenticação | Implementado |
 | 🚧 Sincronização | Planejado |
 

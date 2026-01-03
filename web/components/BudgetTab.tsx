@@ -45,23 +45,36 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
         if (!confirm('Deseja adicionar dados de exemplo?')) return;
         try {
             const categories = ['Alimentação', 'Transporte', 'Lazer', 'Hospedagem', 'Compras'];
-            const descs = ['Jantar', 'Uber', 'Ingresso', 'Hotel', 'Souvenir'];
+            const descs = ['Café', 'Uber', 'Cinema', 'Airbnb', 'Lembrancinha'];
             const today = new Date();
-            const dates = [
-                today.toISOString().split('T')[0],
-                new Date(today.setDate(today.getDate() - 1)).toISOString().split('T')[0],
-                new Date(today.setDate(today.getDate() - 5)).toISOString().split('T')[0]
+
+            // Generate dates for: Today, Week (3 days ago), Month (15 days ago)
+            const dateToday = today.toISOString().split('T')[0];
+
+            const dWeek = new Date(today);
+            dWeek.setDate(dWeek.getDate() - 3);
+            const dateWeek = dWeek.toISOString().split('T')[0];
+
+            const dMonth = new Date(today);
+            dMonth.setDate(dMonth.getDate() - 15);
+            const dateMonth = dMonth.toISOString().split('T')[0];
+
+            const payloads = [
+                { desc: 'Almoço Hoje', amount: 50, cat: 'Alimentação', date: dateToday },
+                { desc: 'Uber Ontem', amount: 25, cat: 'Transporte', date: dateWeek }, // Technically 'Week' includes today, but let's vary
+                { desc: 'Hotel Mês Passado', amount: 500, cat: 'Hospedagem', date: dateMonth },
+                { desc: 'Cinema Semana', amount: 80, cat: 'Lazer', date: dateWeek },
+                { desc: 'Jantar Hoje', amount: 120, cat: 'Alimentação', date: dateToday },
             ];
 
-            for (let i = 0; i < 5; i++) {
-                const cat = categories[i % categories.length];
+            for (const p of payloads) {
                 await api.expenses.create({
                     trip_id: trip.id,
                     user_id: trip.user_id,
-                    description: `${descs[i % descs.length]} Teste`,
-                    amount: Math.floor(Math.random() * 200) + 20,
-                    category: cat,
-                    date: dates[i % dates.length]
+                    description: p.desc,
+                    amount: p.amount,
+                    category: p.cat,
+                    date: p.date
                 });
             }
             alert('Dados inseridos! Atualize a página.');
@@ -76,16 +89,33 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
     // 1. Filter Logic
     const filteredExpenses = useMemo(() => {
         const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Local Midnight
+
+        // String for strict 'today' comparison
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+        // Week: Last 7 days
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - 7);
+
+        // Month: Last 30 days
+        const startOfMonth = new Date(today);
+        startOfMonth.setDate(today.getDate() - 30);
 
         return expenses.filter(e => {
-            const date = new Date(e.date);
             switch (filter) {
-                case 'today': return date >= startOfDay;
-                case 'week': return date >= startOfWeek;
-                case 'month': return date >= startOfMonth;
+                case 'today':
+                    return e.date === todayStr;
+                case 'week':
+                case 'month': {
+                    // Manual parse to ensure local time comparison
+                    const [y, m, d] = e.date.split('-').map(Number);
+                    const expenseDate = new Date(y, m - 1, d); // Local Midnight
+
+                    if (filter === 'week') return expenseDate >= startOfWeek;
+                    if (filter === 'month') return expenseDate >= startOfMonth;
+                    return true;
+                }
                 default: return true; // 'period' = all
             }
         });
@@ -112,7 +142,10 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
     const groupedTransactions = useMemo(() => {
         const groups: Record<string, ExpenseRow[]> = {};
         filteredExpenses.forEach(e => {
-            const dateStr = new Date(e.date).toLocaleDateString('pt-BR');
+            // Fix timezone issue: Manual parse YYYY-MM-DD
+            const [year, month, day] = e.date.split('-');
+            const dateStr = `${day}/${month}/${year}`;
+
             if (!groups[dateStr]) groups[dateStr] = [];
             groups[dateStr].push(e);
         });
@@ -152,7 +185,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
     }
 
     return (
-        <div className="space-y-8 animate-fade-in pb-24 relative">
+        <div className="space-y-8 animate-fade-in pb-24 relative min-h-full">
             {/* 1. Header & Filters */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex flex-wrap bg-white dark:bg-[#1e2a36] p-1 rounded-2xl sm:rounded-full border border-gray-200 dark:border-gray-800 shadow-sm w-full sm:w-auto">
@@ -212,7 +245,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
             <div className="space-y-8">
                 {/* Categories */}
                 <div className="space-y-4">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Categorias</h3>
+                    <h3 className="text-[16px] font-bold text-[#333] dark:text-white">Categorias</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {categoryStats.slice(0, 4).map(stat => (
                             <div key={stat.name} className="bg-white dark:bg-[#1e2a36] p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow">
@@ -231,7 +264,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                 {/* Distribution List */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Distribuição</h3>
+                        <h3 className="text-[16px] font-bold text-[#333] dark:text-white">Distribuição</h3>
                         <button
                             onClick={() => { setNewBudget(trip.budget?.toString() || ''); setIsBudgetModalOpen(true); }}
                             className="text-xs font-bold text-blue-600 hover:text-blue-700 uppercase"
@@ -267,7 +300,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
             {/* 4. Transactions List */}
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Transações</h3>
+                    <h3 className="text-[16px] font-bold text-[#333] dark:text-white">Transações</h3>
                     <button onClick={handleSeedData} className="text-xs text-gray-400 hover:text-gray-600 underline">Add Mock Data</button>
                 </div>
 
@@ -313,8 +346,8 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                 ))}
             </div>
 
-            {/* FAB Button */}
-            <div className="fixed bottom-10 right-10 z-50">
+            {/* FAB Button - Sticky within the content flow */}
+            <div className="sticky bottom-6 float-right right-0 z-50">
                 <button
                     onClick={onAddExpense}
                     className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 hover:bg-blue-700 transition-all active:scale-95 transform hover:-translate-y-1"
