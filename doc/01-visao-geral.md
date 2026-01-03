@@ -66,6 +66,8 @@ easytravel/
 ✅ Modo Escuro/Claro  
 ✅ Design Mobile-First  
 ✅ Integração Supabase (Web e Mobile)
+✅ Perfil de Usuário com Upload de Avatar
+✅ Exclusão de Viagens
 🚧 Refinamento da UI Mobile (Fases finais)
 📱 Futuras features: Galeria de Memórias, Notificações
 

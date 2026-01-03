@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { IMAGES } from '../constants';
 
 const LoginScreen: React.FC = () => {
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -19,9 +20,18 @@ const LoginScreen: React.FC = () => {
 
         try {
             if (isSignUp) {
+                if (!name.trim()) {
+                    throw new Error('Por favor, informe seu nome.');
+                }
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
+                    options: {
+                        data: {
+                            full_name: name,
+                            display_name: name
+                        }
+                    }
                 });
                 if (error) {
                     if (error.message.includes('User already registered')) {
@@ -51,12 +61,13 @@ const LoginScreen: React.FC = () => {
     };
 
     return (
-        <div className="relative h-full min-h-screen bg-background-light dark:bg-background-dark overflow-hidden flex flex-col items-center justify-center p-6">
-            <div
-                className="absolute inset-0 bg-cover bg-center z-0"
-                style={{ backgroundImage: `url(${IMAGES.welcomeHero})` }}
-            >
-                <div className="absolute inset-0 bg-black/40" />
+        <div className="relative h-full min-h-screen bg-white dark:bg-background-dark overflow-hidden flex flex-col items-center justify-end md:justify-center p-6 pb-12">
+            <div className="absolute top-0 left-0 right-0 flex justify-center z-0">
+                <img
+                    src={IMAGES.loginBackground}
+                    alt="Background"
+                    className="w-full max-w-2xl h-auto object-contain"
+                />
             </div>
 
             <div className="relative z-10 w-full max-w-sm bg-white dark:bg-surface-dark p-8 rounded-2xl shadow-xl">
@@ -71,6 +82,19 @@ const LoginScreen: React.FC = () => {
                 )}
 
                 <form onSubmit={handleAuth} className="space-y-4">
+                    {isSignUp && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome</label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="Seu nome"
+                                required
+                            />
+                        </div>
+                    )}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                         <input

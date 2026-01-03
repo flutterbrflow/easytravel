@@ -43,6 +43,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut();
     };
 
+    // Listen for tab focus/visibility to re-validate session
+    useEffect(() => {
+        const handleVisibilityChange = async () => {
+            if (document.visibilityState === 'visible') {
+                const { data, error } = await supabase.auth.getSession();
+                if (error || !data.session) {
+                    setSession(null);
+                } else {
+                    // Start auto refresh if needed or just sync state
+                    setSession(data.session);
+                }
+            }
+        };
+
+        const handleFocus = async () => {
+            const { data, error } = await supabase.auth.getSession();
+            if (error || !data.session) {
+                setSession(null);
+            } else {
+                setSession(data.session);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, []);
+
     const value = {
         session,
         user: session?.user ?? null,

@@ -117,8 +117,9 @@ const TripListScreen: React.FC = () => {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background-light dark:bg-background-dark pb-2">
         <div className="flex flex-col gap-2 p-4 pb-2">
-          <div className="flex items-center h-12 justify-between">
-            <div className="flex size-12 shrink-0 items-center relative">
+          <div className="flex items-center h-12 relative">
+            {/* Left: Avatar */}
+            <div className="flex size-12 shrink-0 items-center justify-center z-20">
               <input
                 type="file"
                 id="avatar-upload"
@@ -140,20 +141,28 @@ const TripListScreen: React.FC = () => {
                 )}
               </label>
             </div>
-            <div className="flex w-12 items-center justify-end">
-              <button className="flex items-center justify-center rounded-full size-10 bg-transparent text-[#111418] dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
+
+            {/* Center: Title */}
+            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+              <h1 className="text-[#111418] dark:text-white text-lg font-bold">Minhas Viagens</h1>
+            </div>
+
+            {/* Right: Settings */}
+            <div className="flex w-12 items-center justify-end ml-auto z-20">
+              <button
+                onClick={() => navigate(AppRoute.PROFILE)}
+                className="flex items-center justify-center rounded-full size-10 bg-transparent text-[#111418] dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+                title="Configurações de Perfil"
+              >
                 <span className="material-symbols-outlined text-[24px]">settings</span>
               </button>
             </div>
           </div>
 
-          <div className="flex justify-between items-end mb-2">
-            <div className="flex flex-col">
-              <h1 className="text-[#111418] dark:text-white text-lg font-bold">Minhas Viagens</h1>
-              <p className="text-[#111418] dark:text-white text-xl font-bold leading-tight mt-1">
-                Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
-              </p>
-            </div>
+          <div className="flex justify-start items-center mb-2 mt-1">
+            <p className="text-[#111418] dark:text-white text-xl font-bold leading-tight">
+              Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
+            </p>
           </div>
 
         </div>
@@ -267,7 +276,7 @@ const TripListScreen: React.FC = () => {
           <NavItem icon="airplane_ticket" label="Viagens" active />
           <NavItem icon="explore" label="Explorar" />
           <NavItem icon="bookmark" label="Salvos" />
-          <NavItem icon="person" label="Perfil" />
+          <NavItem icon="person" label="Perfil" onClick={() => navigate(AppRoute.PROFILE)} />
         </div>
       </nav>
     </div>
@@ -345,8 +354,11 @@ const TripCard: React.FC<{ trip: TripRow; onDelete: (e: React.MouseEvent) => voi
   </div>
 );
 
-const NavItem: React.FC<{ icon: string; label: string; active?: boolean }> = ({ icon, label, active }) => (
-  <button className={`flex flex-col items-center justify-center gap-1 w-16 ${active ? 'text-primary' : 'text-[#9ba8b8] hover:text-[#617589]'}`}>
+const NavItem: React.FC<{ icon: string; label: string; active?: boolean; onClick?: () => void }> = ({ icon, label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`flex flex-col items-center justify-center gap-1 w-16 ${active ? 'text-primary' : 'text-[#9ba8b8] hover:text-[#617589]'}`}
+  >
     <span className={`material-symbols-outlined text-[26px] ${active ? 'font-variation-fill' : ''}`} style={active ? { fontVariationSettings: "'FILL' 1" } : {}}>{icon}</span>
     <span className={`text-[10px] ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
   </button>

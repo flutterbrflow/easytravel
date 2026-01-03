@@ -13,7 +13,8 @@ export const COLORS = {
 };
 
 export const IMAGES = {
-    welcomeHero: "https://lh3.googleusercontent.com/aida-public/AB6AXuAYyVqIFpNYUjJtcdcceKc_PHMmRIoL0PXPoSR5iuMUx3bZVqJiF7IZmVT-KtAl7ktCM194QjD2vNDrYVFjBPIHM8YRsh1HkrxKR9Zk37YzX0THowct91UYyKu3D81M1Q1NxuneUn8px2TuPRaHT2GWiDzTvsZ_XwqzVn2z5tH9vnAFKfARQWgmLRSyjGXwOZkgt_fDgL9fp0BjsrGLWdMkapUCO1VRBr0XHmcZ6KHiQJSZI5t05h0rKuIS3a1VHZuwq-hZPd_vaYGI",
+    welcomeHero: require('../assets/welcome-hero.png'),
+    loginBackground: require('../assets/login-background.png'),
     userAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBvI7c0V-mKXB3NfgfzEDo_q-luiPIaCld-022dWqtGFmwQwZIun0GPlEs4l9UjMJvY2sx3JYRw-x5ax-HB6eZKhypHWyNikF6wkoGhvjLyGcgfzY330CDpIWYJ0GBflNf2C8jev0sKbtRH-Z6OYWGiK0Qcf54kvd7oekXgxcVU3jC4NkZFnFMhSyR6zy81WDlW8tUAmHQE8OXC5_gflXyISBtDB6PRPeE4l9VUGJinOR4j-mDLpSC8aBj82MarPElbS0Ey71FrvH2V",
     friend1: "https://lh3.googleusercontent.com/aida-public/AB6AXuBTJjFjX96vfTQnd9-TH2VDCDkObS1CWTZ7QjjPYvtmNveUR2Mqf7i8BSic2uf-MbcMVBxGAGLdU7jW7af_fgIabqcsWKftjmXakI8P9TspjpRPFu_ZaKKEObJg6n0gdHP4wPppHwj3IOL3h4wpS9CnH51rX_rH0hZqZtw8Kd2ndf1iJ66piJN4Npu5YrcJXM5_DklOMpI0VeEtPxC_q_9typYhMs3l4bQDMDSpDZ6Xy5g6czLYJbyXqJKRnc6QoWKCW5hv4sIgkY52",
     friend2: "https://lh3.googleusercontent.com/aida-public/AB6AXuDjUXuHjIK03cNnJ4dWixkD5l6mu26CJnFPzPs48cCGxBS51qEN9F-tulSlRyabnRl-nb05oFB1cE51YjfOCDQ57E_90VUIBXdQu8Lw3iaaKCZipyCuemLSl9g2Co0AHB7GM1a5T7mPQf4lAYpBIEtvhZWZOsUzLJo1-dxnMWfoGrF4gD2HX7Am8MMgQJS4Uruow6-l3oNevXGZn8T0rTK5QJKo27Edj70HatQbYs-gZHaBLVXFYDOWXKhLAvCBXqA1jhgCNyOF6PAf",

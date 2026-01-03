@@ -23,21 +23,18 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
     const isDark = colorScheme === 'dark';
 
     return (
-        <View style={[styles.container, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.backgroundLight }]}>
+        <View style={[styles.container, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.surfaceLight }]}>
             {/* Main Content Area */}
             <View style={styles.content}>
                 {/* Hero Section */}
                 <View style={styles.heroContainer}>
                     <View style={styles.heroImageWrapper}>
                         <Image
-                            source={{ uri: IMAGES.welcomeHero }}
+                            source={IMAGES.welcomeHero}
                             style={styles.heroImage}
-                            resizeMode="cover"
+                            resizeMode="contain"
                         />
-                        <LinearGradient
-                            colors={['rgba(0,0,0,0.05)', isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.3)']}
-                            style={styles.gradient}
-                        />
+
                     </View>
                 </View>
 
@@ -60,7 +57,7 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
             </View>
 
             {/* Footer Actions */}
-            <View style={[styles.footer, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.backgroundLight }]}>
+            <View style={[styles.footer, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.surfaceLight }]}>
                 {/* Indicators */}
                 <View style={styles.indicators}>
                     <View style={[styles.indicator, styles.indicatorActive]} />
@@ -79,11 +76,8 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
                 </TouchableOpacity>
 
                 {/* Login Link */}
+                {/* Login Link Removed */}
                 <View style={styles.loginContainer}>
-                    <Text style={[styles.loginText, { color: isDark ? COLORS.textGrayDark : COLORS.textGray }]}>
-                        Já tem uma conta?{' '}
-                        <Text style={styles.loginLink}>Entrar</Text>
-                    </Text>
                 </View>
             </View>
         </View>
@@ -114,13 +108,9 @@ const styles = StyleSheet.create({
     heroImageWrapper: {
         width: '100%',
         aspectRatio: 3 / 4,
-        borderRadius: 16,
-        overflow: 'hidden',
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
+        // Removed elevation and shadow to blend with background
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     heroImage: {
         width: '100%',

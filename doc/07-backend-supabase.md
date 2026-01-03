@@ -17,7 +17,7 @@ O projeto utiliza Supabase como Backend-as-a-Service (BaaS) para:
 Armazena fotos de perfil dos usuários.
 - **Acesso:** Público (Leitura)
 - **RLS:** Autenticados podem fazer upload/update (apenas seus próprios arquivos, validado por nome da pasta/arquivo ou policy)
-- **Cache Busting:** O front-end (Web e Mobile) deve implementar cache busting appendando `?t=timestamp` à URL da imagem, pois o Supabase/CDN faz cache agressivo de arquivos com mesmo nome.
+- **Cache Busting:** O Supabase/CDN faz cache agressivo. A estratégia adotada é usar a coluna `updated_at` da tabela `profiles` como query param `?t=timestamp` na URL da imagem. Isso garante que todos os clientes vejam a nova imagem imediatamente após o update.
 
 #### `trip-images`
 Imagens de capa para viagens.
@@ -36,6 +36,7 @@ Estende a tabela `auth.users` do Supabase com dados públicos do perfil.
 - `id`: FK para auth.users (PK)
 - `name`: Nome do usuário
 - `avatar_url`: URL da foto de perfil
+- `updated_at`: Timestamp da última atualização (usado para cache busting)
 
 #### `trips`
 Armazena as viagens criadas pelos usuários.

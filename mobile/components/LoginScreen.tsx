@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { IMAGES, COLORS } from '../constants';
@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 
 const LoginScreen = () => {
     const navigation = useNavigation<any>();
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -19,12 +20,23 @@ const LoginScreen = () => {
             return;
         }
 
+        if (isSignUp && !name.trim()) {
+            Alert.alert('Erro', 'Por favor, informe seu nome.');
+            return;
+        }
+
         setLoading(true);
         try {
             if (isSignUp) {
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
+                    options: {
+                        data: {
+                            full_name: name,
+                            display_name: name
+                        }
+                    }
                 });
                 if (error) {
                     if (error.message.includes('User already registered')) {
@@ -46,12 +58,7 @@ const LoginScreen = () => {
                     }
                     throw error;
                 }
-                // Navigation is handled by App.tsx observing session state normally, 
-                // but explicit nav works too if we stack it right.
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'TripList' }],
-                });
+                // Navigation is handled automatically by App.tsx based on session state
             }
         } catch (err: any) {
             Alert.alert('Erro', err.message);
@@ -62,59 +69,77 @@ const LoginScreen = () => {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="light" />
-            <ImageBackground source={{ uri: IMAGES.welcomeHero }} style={styles.backgroundImage}>
-                <View style={styles.overlay} />
-                <View style={styles.content}>
-                    <View style={styles.card}>
-                        <Text style={styles.title}>{isSignUp ? 'Criar Conta' : 'Bem-vindo de volta'}</Text>
+            <StatusBar style="dark" />
+            <View style={styles.imageContainer}>
+                <Image
+                    source={IMAGES.loginBackground}
+                    style={styles.heroImage}
+                    resizeMode="contain"
+                />
+            </View>
+            <View style={styles.content}>
+                <View style={styles.card}>
+                    <Text style={styles.title}>{isSignUp ? 'Criar Conta' : 'Bem-vindo de volta'}</Text>
 
+                    {isSignUp && (
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Email</Text>
+                            <Text style={styles.label}>Nome</Text>
                             <TextInput
                                 style={styles.input}
-                                value={email}
-                                onChangeText={setEmail}
-                                placeholder="seu@email.com"
+                                value={name}
+                                onChangeText={setName}
+                                placeholder="Seu nome"
                                 placeholderTextColor="#999"
-                                autoCapitalize="none"
-                                keyboardType="email-address"
+                                autoCapitalize="words"
                             />
                         </View>
+                    )}
 
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Senha</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={password}
-                                onChangeText={setPassword}
-                                placeholder="********"
-                                placeholderTextColor="#999"
-                                secureTextEntry
-                            />
-                        </View>
-
-                        <TouchableOpacity
-                            style={[styles.button, loading && styles.buttonDisabled]}
-                            onPress={handleAuth}
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.buttonText}>{isSignUp ? 'Cadastrar' : 'Entrar'}</Text>
-                            )}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={styles.switchButton}>
-                            <Text style={styles.switchText}>
-                                {isSignUp ? 'Já tem uma conta? ' : 'Não tem uma conta? '}
-                                <Text style={styles.switchTextBold}>{isSignUp ? 'Entrar' : 'Cadastre-se'}</Text>
-                            </Text>
-                        </TouchableOpacity>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Email</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={email}
+                            onChangeText={setEmail}
+                            placeholder="seu@email.com"
+                            placeholderTextColor="#999"
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                        />
                     </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Senha</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={password}
+                            onChangeText={setPassword}
+                            placeholder="********"
+                            placeholderTextColor="#999"
+                            secureTextEntry
+                        />
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.button, loading && styles.buttonDisabled]}
+                        onPress={handleAuth}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.buttonText}>{isSignUp ? 'Cadastrar' : 'Entrar'}</Text>
+                        )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={styles.switchButton}>
+                        <Text style={styles.switchText}>
+                            {isSignUp ? 'Já tem uma conta? ' : 'Não tem uma conta? '}
+                            <Text style={styles.switchTextBold}>{isSignUp ? 'Entrar' : 'Cadastre-se'}</Text>
+                        </Text>
+                    </TouchableOpacity>
                 </View>
-            </ImageBackground>
+            </View>
         </View>
     );
 };
@@ -122,20 +147,27 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#ffffff',
     },
-    backgroundImage: {
-        flex: 1,
-        resizeMode: 'cover',
-        justifyContent: 'center',
+    imageContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '55%', // Occupy top half roughly
+        alignItems: 'center',
+        justifyContent: 'flex-start', // Align start so padding top can be added if needed
+        paddingTop: 40,
     },
-    overlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    heroImage: {
+        width: '100%',
+        height: '100%',
     },
     content: {
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: 'flex-end',
         padding: 24,
+        paddingBottom: 48,
     },
     card: {
         backgroundColor: 'white',

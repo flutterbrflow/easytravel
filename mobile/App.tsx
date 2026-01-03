@@ -11,9 +11,10 @@ import WelcomeScreen from './components/WelcomeScreen';
 import LoginScreen from './components/LoginScreen';
 import TripListScreen from './components/TripListScreen';
 import NewTripScreen from './components/NewTripScreen';
+import ProfileScreen from './components/ProfileScreen';
 import { RootStackParamList } from './types';
 import { COLORS } from './constants';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -75,7 +76,7 @@ const MainTabs = () => {
       />
       <Tab.Screen
         name="ProfileTab"
-        component={TripListScreen} // Placeholder
+        component={ProfileScreen}
         options={{
           tabBarLabel: 'Perfil',
           tabBarIcon: ({ color, size }) => (
@@ -87,7 +88,44 @@ const MainTabs = () => {
   );
 };
 
+// Main Navigator with Conditional Logic
+const MainNavigator = () => {
+  const { session, loading } = useAuth();
+  const colorScheme = useColorScheme();
 
+  if (loading) {
+    return null; // Or Splash
+  }
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+      }}
+    >
+      {!session ? (
+        <>
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="TripList" component={MainTabs} />
+          <Stack.Screen
+            name="NewTrip"
+            component={NewTripScreen}
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+};
 
 export default function App() {
   const colorScheme = useColorScheme();
@@ -97,24 +135,7 @@ export default function App() {
       <AuthProvider>
         <NavigationContainer>
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <Stack.Navigator
-            screenOptions={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          >
-            <Stack.Screen name="Welcome" component={WelcomeScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="TripList" component={MainTabs} />
-            <Stack.Screen
-              name="NewTrip"
-              component={NewTripScreen}
-              options={{
-                presentation: 'modal',
-                animation: 'slide_from_bottom',
-              }}
-            />
-          </Stack.Navigator>
+          <MainNavigator />
         </NavigationContainer>
       </AuthProvider>
     </SafeAreaProvider>

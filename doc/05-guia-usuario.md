@@ -99,7 +99,7 @@ O app possui 4 seções principais:
 | ✈️ | **Viagens** | Lista de todas suas viagens |
 | 🧭 | **Explorar** | Descobrir novos destinos (em breve) |
 | 🔖 | **Salvos** | Lugares favoritos (em breve) |
-| 👤 | **Perfil** | Configurações e dados pessoais (em breve) |
+| 👤 | **Perfil** | Sua conta, preferências e foto de perfil |
 
 ---
 
@@ -144,6 +144,12 @@ O EasyTravel se adapta automaticamente ao tema do seu sistema:
 ✅ Adicionar participantes  
 ✅ Escrever notas  
 ✅ Visualização de calendário  
+
+### 👤 Perfil
+✅ Alterar foto de perfil (Upload)  
+✅ Visualizar estatísticas (Países, Viagens, Fotos)  
+✅ Alternar Modo Claro/Escuro  
+✅ Sair da conta (Logout)  
 
 ---
 
@@ -210,11 +216,13 @@ O EasyTravel se adapta automaticamente ao tema do seu sistema:
 | ✅ Listar viagens | Implementado |
 | ✅ Modo escuro | Implementado |
 | ✅ Interface responsiva | Implementado |
+| ✅ Perfil de Usuário | Implementado |
+| ✅ Upload de Avatar | Implementado |
 | 🚧 Editar viagem | Em desenvolvimento |
 | 🚧 Excluir viagem | Em desenvolvimento |
 | 🚧 Galeria de fotos | Em desenvolvimento |
 | 🚧 Controle de gastos | Em desenvolvimento |
-| 🚧 Autenticação | Planejado |
+| ✅ Autenticação | Implementado |
 | 🚧 Sincronização | Planejado |
 
 **Legenda:**

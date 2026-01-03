@@ -95,6 +95,52 @@ Nenhuma
 
 ---
 
+## LoginScreen
+
+**Tipo:** Screen Component  
+**Localização:** `/components/LoginScreen.tsx` (Web & Mobile)
+
+### Descrição
+Tela de autenticação que permite ao usuário entrar ou criar uma nova conta.
+
+### Características
+- **Imagem de Fundo:** Ilustração temática de viagens (top-aligned no mobile, side/integrated no web).
+- **Formulário Dinâmico:** Alterna entre Login e Cadastro.
+- **Campos:**
+  - Nome (apenas Cadastro)
+  - Email
+  - Senha
+- **Feedback:** Loading states e alertas de erro/sucesso.
+- **Logout Sync:** Integrado com `AuthContext` para redirecionamento automático.
+
+### Estrutura Visual (Mobile)
+```
+┌─────────────────────────────┐
+│                             │
+│       [Illustration]        │
+│                             │
+│ ┌─────────────────────────┐ │
+│ │ Bem-vindo de volta      │ │
+│ │                         │ │
+│ │ Email                   │ │
+│ │ [seu@email.com]         │ │
+│ │                         │ │
+│ │ Senha                   │ │
+│ │ [********]              │ │
+│ │                         │ │
+│ │ [ Entrar ]              │ │
+│ │                         │ │
+│ │ Não tem conta? Cadastre │ │
+│ └─────────────────────────┘ │
+└─────────────────────────────┘
+```
+
+### Integrações
+- **Supabase Auth:** `signInWithPassword`, `signUp`.
+- **Navegação:** Redirecionamento automático via `App.tsx` (listener de sessão).
+
+---
+
 ## TripListScreen
 
 **Tipo:** Screen Component  
@@ -277,6 +323,35 @@ Renderiza um calendário interativo com seleção de período (range).
 
 ### Validação
 ⚠️ Atualmente sem validação implementada
+
+---
+
+## ProfileScreen
+
+**Tipo:** Screen Component  
+**Localização:** `/components/ProfileScreen.tsx`
+
+### Descrição
+Tela de perfil do usuário que exibe informações pessoais, estatísticas de uso e preferências do aplicativo.
+
+### Características
+- **Header:** Botão de voltar e configurações.
+- **Info do Usuário:**
+  - Avatar com cache busting (`?t=updated_at`) para atualização imediata.
+  - Upload de imagem via `expo-image-picker` (Mobile) ou Input File (Web).
+- **Estatísticas:**
+  - Viagens realizadas.
+  - Países visitados.
+  - Fotos (count corrigido).
+- **Preferências:**
+  - Componentes refatorados (`StatCard`, `PreferenceItem`) para performance.
+  - Modo Escuro e Notificações (Switch).
+- **Logout:** Redirecionamento seguro para Login/Welcome.
+
+### Integrações
+- **Supabase Auth:** Dados do usuário, update profile e logout.
+- **Supabase Storage:** Upload no bucket `avatars`.
+- **Supabase DB:** Fetch da tabela `profiles` para garantir avatar atualizado.
 
 ---
 

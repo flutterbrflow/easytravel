@@ -7,18 +7,18 @@ const WelcomeScreen: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col h-full bg-background-light dark:bg-background-dark min-h-[100dvh]">
+    <div className="flex flex-col h-full bg-white dark:bg-background-dark min-h-[100dvh]">
       {/* Main Content Area */}
       <div className="flex flex-col flex-grow">
         {/* Hero Section */}
         <div className="w-full px-4 pt-4 pb-2">
-          <div className="relative w-full aspect-[3/4] overflow-hidden rounded-2xl shadow-md group">
+          <div className="relative w-full aspect-[3/4] group flex items-center justify-center">
             <div
-              className="absolute inset-0 bg-center bg-cover bg-no-repeat transition-transform duration-700 hover:scale-105"
+              className="absolute inset-0 bg-center bg-contain bg-no-repeat transition-transform duration-700 hover:scale-105"
               style={{ backgroundImage: `url("${IMAGES.welcomeHero}")` }}
             ></div>
             {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/5 to-black/30 dark:to-black/50"></div>
+            {/* Gradient Overlay Removed */}
           </div>
         </div>
 
@@ -50,7 +50,7 @@ const WelcomeScreen: React.FC = () => {
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-col w-full px-4 pt-6 pb-8 bg-background-light dark:bg-background-dark">
+      <div className="flex flex-col w-full px-4 pt-6 pb-8 bg-white dark:bg-background-dark">
         {/* Indicators */}
         <div className="flex w-full flex-row items-center justify-center gap-2 mb-6">
           <div className="h-2 w-6 rounded-full bg-primary transition-all"></div>
@@ -70,14 +70,8 @@ const WelcomeScreen: React.FC = () => {
         </div>
 
         {/* Login Link */}
-        <div className="text-center">
-          <p className="text-[#637588] dark:text-[#93a5b8] text-sm font-medium">
-            Já tem uma conta?
-            <a href="#" className="text-primary font-bold hover:text-blue-600 dark:hover:text-blue-400 transition-colors ml-1">
-              Entrar
-            </a>
-          </p>
-        </div>
+        {/* Login Link Removed as per request */}
+        <div className="h-2"></div>
         <div className="h-2"></div>
       </div>
     </div>

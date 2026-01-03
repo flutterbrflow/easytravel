@@ -73,11 +73,11 @@ Escaneie o QR code com o app Expo Go ou execute:
 - 🗑️ Exclusão de viagens
 - 📸 Upload de imagens (Avatar e Capa)
 - 🤝 Funcionalidades sociais (Convidar/Adicionar)
+- 👤 Tela de Perfil (Stats, Preferências, Logout)
 - 🌓 Modo escuro/claro
 - 📱 Interface responsiva (Web e Mobile)
 
 ### 🚧 Em Desenvolvimento
-- 👤 Tela de Perfil (Próximo passo)
 - 💰 Controle de gastos detalhado
 - 🔔 Notificações push
 - 📍 Mapa interativo

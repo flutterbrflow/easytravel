@@ -24,9 +24,7 @@ import { IMAGES, COLORS } from '../constants';
 import { api, TripRow } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'TripList'>;
-
-const TripListScreen: React.FC<Props> = ({ navigation }) => {
+const TripListScreen: React.FC<any> = ({ navigation }) => {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
     const [trips, setTrips] = useState<TripRow[]>([]);
@@ -206,7 +204,10 @@ const TripListScreen: React.FC<Props> = ({ navigation }) => {
 
                     <Text style={[styles.headerCenterTitle, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>Minhas Viagens</Text>
 
-                    <TouchableOpacity style={[styles.iconButton, { backgroundColor: isDark ? '#1e2a36' : '#f3f4f6' }]}>
+                    <TouchableOpacity
+                        style={[styles.iconButton, { backgroundColor: isDark ? '#1e2a36' : '#f3f4f6' }]}
+                        onPress={() => navigation.navigate('Profile')}
+                    >
                         <MaterialCommunityIcons name="cog" size={24} color={isDark ? COLORS.textLight : COLORS.textDark} />
                     </TouchableOpacity>
                 </View>

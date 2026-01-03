@@ -20,6 +20,14 @@ export type RootStackParamList = {
   TripList: undefined;
   NewTrip: { tripId?: string };
   TripDetail: { tripId: string };
+  Profile: undefined;
+};
+
+export type RootTabParamList = {
+  TripsTab: undefined;
+  ExploreTab: undefined;
+  SavedTab: undefined;
+  ProfileTab: undefined;
 };
 
 declare global {

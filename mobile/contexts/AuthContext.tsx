@@ -1,6 +1,7 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
+import { AppState } from 'react-native';
 import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
@@ -34,11 +35,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
         });
 
-        return () => subscription.unsubscribe();
+        // Listen for AppState changes to re-validate session
+        const appStateSubscription = AppState.addEventListener('change', async (nextAppState) => {
+            if (nextAppState === 'active') {
+                try {
+                    const { data, error } = await supabase.auth.getSession();
+                    if (error) {
+                        // Token might be invalid or expired, just clear session
+                        console.log('Session refresh error (handled):', error.message);
+                        setSession(null);
+                    } else if (!data.session) {
+                        setSession(null);
+                    } else {
+                        setSession(data.session);
+                    }
+                } catch (e) {
+                    setSession(null);
+                }
+            }
+        });
+
+        return () => {
+            subscription.unsubscribe();
+            appStateSubscription.remove();
+        };
     }, []);
 
     const signOut = async () => {
         await supabase.auth.signOut();
+        setSession(null); // Force UI update
     };
 
     const value = {
