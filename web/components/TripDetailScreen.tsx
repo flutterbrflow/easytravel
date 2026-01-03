@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, TripRow, ExpenseRow, MemoryRow } from '../services/api';
+import { api, TripRow, ExpenseRow, MemoryRow, ExpenseInsert } from '../services/api';
+import ExpenseModal from './ExpenseModal';
+import BudgetTab from './BudgetTab'; // Dashboard Component
 import { AppRoute } from '../types';
 import { IMAGES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
@@ -144,6 +146,10 @@ const TripDetailScreen: React.FC = () => {
     const [editEndDate, setEditEndDate] = useState<string | null>(null);
     const [editCoverImage, setEditCoverImage] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+
+    // Expenses State
+    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [editingExpense, setEditingExpense] = useState<ExpenseRow | null>(null);
     const [newImageFile, setNewImageFile] = useState<File | null>(null);
 
     useEffect(() => {
@@ -244,6 +250,54 @@ const TripDetailScreen: React.FC = () => {
             alert('Erro ao atualizar: ' + error.message);
         } finally {
             setSaving(false);
+        }
+    };
+
+    // --- Expense Handlers ---
+
+    const handleOpenAddExpense = () => {
+        setEditingExpense(null);
+        setIsExpenseModalOpen(true);
+    };
+
+    const handleEditExpense = (expense: ExpenseRow) => {
+        setEditingExpense(expense);
+        setIsExpenseModalOpen(true);
+    };
+
+    const handleSaveExpense = async (expenseData: Partial<ExpenseInsert>) => {
+        if (!trip || !user) return;
+
+        try {
+            if (editingExpense) {
+                // Update
+                await api.expenses.update(editingExpense.id, expenseData);
+            } else {
+                // Create
+                await api.expenses.create({
+                    ...expenseData,
+                    trip_id: trip.id,
+                    user_id: user.id,
+                } as ExpenseInsert);
+            }
+            // Reload expenses list
+            const updatedExpenses = await api.expenses.list(trip.id);
+            setExpenses(updatedExpenses || []);
+        } catch (error) {
+            console.error('Error saving expense:', error);
+            throw error;
+        }
+    };
+
+    const handleDeleteExpense = async (id: string) => {
+        if (!confirm('Tem certeza que deseja excluir esta despesa?')) return;
+
+        try {
+            await api.expenses.delete(id);
+            setExpenses(prev => prev.filter(e => e.id !== id));
+        } catch (error) {
+            console.error('Error deleting expense:', error);
+            alert('Erro ao excluir despesa.');
         }
     };
 
@@ -494,41 +548,13 @@ const TripDetailScreen: React.FC = () => {
                 )}
 
                 {activeTab === 'budget' && (
-                    <div className="space-y-6">
-                        {/* Summary Card */}
-                        <div className="bg-blue-600 rounded-xl p-6 shadow-lg text-white text-center">
-                            <p className="text-blue-100 text-sm font-medium mb-1">Total Gasto</p>
-                            <h2 className="text-4xl font-bold">
-                                R$ {expenses.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0).toFixed(2)}
-                            </h2>
-                        </div>
-
-                        {/* Expenses List */}
-                        <div className="space-y-3">
-                            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1">
-                                Histórico
-                            </h3>
-                            {expenses.length === 0 ? (
-                                <div className="text-center py-10 text-gray-400 dark:text-gray-500">
-                                    <p>Nenhuma despesa registrada.</p>
-                                </div>
-                            ) : (
-                                expenses.map(expense => (
-                                    <div key={expense.id} className="bg-white dark:bg-[#1e2a36] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                                        <div>
-                                            <p className="font-medium text-gray-800 dark:text-white">{expense.description}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                {new Date(expense.date).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                        <span className="font-bold text-gray-800 dark:text-white">
-                                            R$ {Number(expense.amount).toFixed(2)}
-                                        </span>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
+                    <BudgetTab
+                        expenses={expenses}
+                        trip={trip}
+                        onAddExpense={handleOpenAddExpense}
+                        onEditExpense={handleEditExpense}
+                        onDeleteExpense={handleDeleteExpense}
+                    />
                 )}
 
                 {activeTab === 'memories' && (
@@ -554,8 +580,20 @@ const TripDetailScreen: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {trip && user && (
+                <ExpenseModal
+                    isOpen={isExpenseModalOpen}
+                    onClose={() => setIsExpenseModalOpen(false)}
+                    onSave={handleSaveExpense}
+                    initialData={editingExpense}
+                    tripId={trip.id}
+                    userId={user.id}
+                />
+            )}
         </div>
     );
 };
 
 export default TripDetailScreen;
+

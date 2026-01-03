@@ -12,7 +12,8 @@ import {
     TextInput,
     KeyboardAvoidingView,
     Platform,
-    Share
+    Share,
+    useColorScheme
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -21,7 +22,9 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Contacts from 'expo-contacts';
 
 import { RootStackParamList } from '../types';
-import { api } from '../services/api';
+import { api, TripRow, ExpenseRow, MemoryRow, ExpenseInsert } from '../services/api'; // Assuming ExpenseInsert is exported
+import ExpenseModal from './ExpenseModal'; // Import Modal
+import BudgetTab from './BudgetTab'; // Import new Budget Tab
 import { COLORS, IMAGES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -145,16 +148,22 @@ const Participant: React.FC<{ avatar: any; name: string; isUser?: boolean }> = (
     );
 };
 
-const TripDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-    const { tripId } = route.params;
+const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }) => {
+    const { tripId } = route.params; // Kept tripId as per original code, assuming 'id' was a typo in instruction
     const { user } = useAuth();
+    const colorScheme = useColorScheme(); // Added useColorScheme
+    const isDark = colorScheme === 'dark'; // Derived isDark from colorScheme
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // Expenses State
+    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [editingExpense, setEditingExpense] = useState<ExpenseRow | null>(null);
     const [trip, setTrip] = useState<any>(null);
     const [expenses, setExpenses] = useState<any[]>([]);
     const [memories, setMemories] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'overview' | 'budget' | 'memories'>('overview');
-    const isDark = false; // Fixed for now, can be hooked to theme
+    // const isDark = false; // Fixed for now, can be hooked to theme - REMOVED
 
     // Edit State
     const [editDestination, setEditDestination] = useState('');
@@ -210,7 +219,7 @@ const TripDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     const pickImage = async () => {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: true,
                 aspect: [16, 9],
                 quality: 0.8,
@@ -297,6 +306,63 @@ const TripDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         // Fix timezone issue by handling string directly YYYY-MM-DD
         const [year, month, day] = dateStr.split('-');
         return `${day}/${month}/${year}`;
+    };
+
+    // --- Expense Handlers ---
+
+    const handleOpenAddExpense = () => {
+        setEditingExpense(null);
+        setIsExpenseModalOpen(true);
+    };
+
+    const handleEditExpense = (expense: ExpenseRow) => {
+        setEditingExpense(expense);
+        setIsExpenseModalOpen(true);
+    };
+
+    const handleSaveExpense = async (expenseData: Partial<ExpenseInsert>) => {
+        if (!trip || !user) return;
+
+        try {
+            if (editingExpense) {
+                await api.expenses.update(editingExpense.id, expenseData);
+            } else {
+                await api.expenses.create({
+                    ...expenseData,
+                    trip_id: trip.id,
+                    user_id: user.id,
+                } as ExpenseInsert);
+            }
+            // Reload
+            const updatedExpenses = await api.expenses.list(trip.id);
+            setExpenses(updatedExpenses || []);
+        } catch (error) {
+            console.error('Error saving expense:', error);
+            Alert.alert('Erro', 'Falha ao salvar despesa');
+        }
+    };
+
+    const handleDeleteExpense = async (id: string) => {
+        Alert.alert(
+            'Confirmar Exclusão',
+            'Deseja realmente excluir esta despesa?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Excluir',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.expenses.delete(id);
+                            setExpenses(prev => prev.filter(e => e.id !== id));
+                        } catch (error) {
+                            console.error('Error deleting expense:', error);
+                            Alert.alert('Erro', 'Falha ao excluir despesa');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const formatHeaderDate = (start: string | null, end: string | null) => {
@@ -515,9 +581,14 @@ const TripDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 )}
 
                 {activeTab === 'budget' && (
-                    <View style={styles.sectionContainer}>
-                        <Text>Budget Mock</Text>
-                    </View>
+                    <BudgetTab
+                        expenses={expenses}
+                        trip={trip}
+                        onAddExpense={handleOpenAddExpense}
+                        onEditExpense={handleEditExpense}
+                        onDeleteExpense={handleDeleteExpense}
+                        onRefresh={loadData}
+                    />
                 )}
                 {activeTab === 'memories' && (
                     <View style={styles.sectionContainer}>
@@ -525,6 +596,18 @@ const TripDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                     </View>
                 )}
             </ScrollView>
+
+            {trip && user && (
+                <ExpenseModal
+                    visible={isExpenseModalOpen}
+                    onClose={() => setIsExpenseModalOpen(false)}
+                    onSave={handleSaveExpense}
+                    initialData={editingExpense}
+                    tripId={trip.id}
+                    userId={user.id}
+                    isDark={isDark}
+                />
+            )}
         </SafeAreaView>
     );
 };
@@ -728,67 +811,19 @@ const styles = StyleSheet.create({
     addParticipantText: { fontSize: 12, fontWeight: '500', marginTop: 4 },
     inviteButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     inviteText: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
-    sectionTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 8,
-        color: '#333',
-    },
-    dateText: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 16,
-    },
-    descriptionCard: {
-        backgroundColor: '#f9fafb',
-        padding: 16,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#eee',
-    },
-    descriptionText: {
-        fontSize: 16,
-        color: '#444',
-        lineHeight: 24,
-    },
-    summaryCard: {
-        backgroundColor: COLORS.primary,
-        padding: 20,
-        borderRadius: 12,
-        marginBottom: 20,
-        alignItems: 'center',
-    },
-    summaryLabel: {
-        color: 'rgba(255,255,255,0.8)',
-        fontSize: 14,
-        marginBottom: 4,
-    },
-    summaryValue: {
-        color: '#fff',
-        fontSize: 32,
-        fontWeight: 'bold',
-    },
-    expenseItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-    },
-    expenseTitle: {
-        fontSize: 16,
-        color: '#333',
-    },
+    /* Removed duplicates */
     expenseAmount: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#111418',
     },
-    emptyText: {
-        textAlign: 'center',
-        color: '#999',
-        marginTop: 20,
-    }
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#111418',
+        marginBottom: 16,
+        marginLeft: 4,
+    },
 });
 
 export default TripDetailScreen;

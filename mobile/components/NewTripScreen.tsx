@@ -45,7 +45,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
     const pickImage = async () => {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: true,
                 aspect: [16, 9],
                 quality: 0.8,

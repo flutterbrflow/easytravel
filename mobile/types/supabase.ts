@@ -150,6 +150,7 @@ export type Database = {
                     start_date: string
                     status: string
                     description: string | null
+                    budget: number | null
                     updated_at: string
                     user_id: string
                 }
@@ -162,6 +163,7 @@ export type Database = {
                     start_date: string
                     status: string
                     description?: string | null
+                    budget?: number | null
                     updated_at?: string
                     user_id: string
                 }
@@ -174,6 +176,7 @@ export type Database = {
                     start_date?: string
                     status?: string
                     description?: string | null
+                    budget?: number | null
                     updated_at?: string
                     user_id?: string
                 }

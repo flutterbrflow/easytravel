@@ -88,6 +88,31 @@ Existem **3 maneiras** de criar uma nova viagem:
 
 ---
 
+## Controle de Gastos 💰
+
+Agora você pode gerenciar seu orçamento diretamente no app!
+
+### Configurando o Orçamento
+1. Na tela de detalhes da viagem, vá para a aba **"Gastos"**.
+2. Toque em **"Configurar"** (ou no ícone de engrenagem/texto azul).
+3. Defina o valor total que pretende gastar.
+4. O app mostrará uma barra de progresso com o quanto você já consumiu.
+
+### Adicionando Despesas
+1. Toque no botão flutuante **(+)** na aba de Gastos.
+2. Preencha a descrição (ex: "Jantar", "Uber").
+3. Digite o valor (aceita vírgula ou ponto, ex: "50,00").
+4. Escolha a categoria e a data.
+5. Salve!
+
+### Visualizando Relatórios
+- **Saldo Disponível:** Veja quanto ainda pode gastar.
+- **Por Categoria:** Gráfico mostrando onde você gasta mais.
+- **Transações:** Lista detalhada de todos os gastos.
+
+---
+
+
 ## Navegação do App
 
 ### Barra Inferior
@@ -218,10 +243,10 @@ O EasyTravel se adapta automaticamente ao tema do seu sistema:
 | ✅ Interface responsiva | Implementado |
 | ✅ Perfil de Usuário | Implementado |
 | ✅ Upload de Avatar | Implementado |
+| ✅ Controle de gastos | Implementado |
+| 🚧 Galeria de fotos | Em desenvolvimento |
 | 🚧 Editar viagem | Em desenvolvimento |
 | 🚧 Excluir viagem | Em desenvolvimento |
-| 🚧 Galeria de fotos | Em desenvolvimento |
-| 🚧 Controle de gastos | Em desenvolvimento |
 | ✅ Autenticação | Implementado |
 | 🚧 Sincronização | Planejado |
 

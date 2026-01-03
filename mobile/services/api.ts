@@ -88,6 +88,18 @@ export const api = {
             return data;
         },
 
+        async update(id: string, updates: Partial<ExpenseInsert>) {
+            const { data, error } = await supabase
+                .from('expenses')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+
         async delete(id: string) {
             const { error } = await supabase
                 .from('expenses')

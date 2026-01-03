@@ -227,7 +227,58 @@ Utiliza `MOCK_TRIPS` de `constants.ts`:
 - Tóquio, Japão
 - Nova York, EUA
 
+
 ---
+
+## BudgetTab
+
+**Tipo:** Tab Component  
+**Localização:** `/components/BudgetTab.tsx`
+
+### Descrição
+Componente responsável por gerenciar e visualizar o orçamento da viagem, exibindo gráficos de gastos e lista de transações.
+
+### Características
+- **Filtros de Tempo:** Todo o período, Hoje, Semana, Mês.
+- **Configuração de Orçamento:** Modal para definir o valor total do orçamento.
+- **Visualização Gráfica:**
+  - Card de Saldo Disponível com barra de progresso.
+  - Gráfico de distribuição por categorias.
+- **Lista de Transações:** Agrupada por data, com ícones de categoria e valores formatados.
+- **Interações:**
+  - Adicionar nova despesa (FAB).
+  - Editar despesa existente (clique no card).
+  - Excluir despesa.
+
+### Props
+```typescript
+interface BudgetTabProps {
+    expenses: ExpenseRow[];
+    trip: TripRow;
+    onAddExpense: () => void;
+    onEditExpense: (expense: ExpenseRow) => void;
+    onDeleteExpense: (id: string) => void;
+}
+```
+
+---
+
+## ExpenseModal
+
+**Tipo:** Modal Component  
+**Localização:** `/components/ExpenseModal.tsx`
+
+### Descrição
+Modal para adicionar ou editar despesas.
+
+### Características
+- Formulário com campos validação.
+- Seleção de categoria com ícones visuais.
+- Suporte a input de valor com vírgula ou ponto.
+- Datepicker para data da despesa.
+
+---
+
 
 ## NewTripScreen
 

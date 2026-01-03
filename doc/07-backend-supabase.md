@@ -45,6 +45,7 @@ Armazena as viagens criadas pelos usuários.
 - `destination`: Destino da viagem
 - `status`: 'upcoming', 'planning', 'past'
 - `description`: Notas/Descrição da viagem (Opcional)
+- `budget`: Orçamento total da viagem (Numeric)
 
 #### `expenses`
 Despesas associadas a uma viagem.
@@ -52,6 +53,8 @@ Despesas associadas a uma viagem.
 - `trip_id`: FK para trips (Delete Cascade)
 - `amount`: Valor da despesa
 - `category`: Categoria (Alimentação, Transporte, etc)
+- `description`: Descrição da despesa
+- `date`: Data da despesa
 
 #### `memories`
 Fotos e memórias de viagens.
