@@ -12,6 +12,7 @@ import LoginScreen from './components/LoginScreen';
 import TripListScreen from './components/TripListScreen';
 import NewTripScreen from './components/NewTripScreen';
 import ProfileScreen from './components/ProfileScreen';
+import TripDetailScreen from './components/TripDetailScreen';
 import { RootStackParamList } from './types';
 import { COLORS } from './constants';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -19,7 +20,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
-// Bottom Tab Navigator Component
+// Componente de Navegação em Abas Inferior
 const MainTabs = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -120,6 +121,7 @@ const MainNavigator = () => {
               animation: 'slide_from_bottom',
             }}
           />
+          <Stack.Screen name="TripDetail" component={TripDetailScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
         </>
       )}

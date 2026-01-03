@@ -41,7 +41,7 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
 
     const loadTrips = async () => {
         try {
-            // setLoading(true); // Optional: if we want to show spinner every time
+            // setLoading(true); // Opcional: se quisermos mostrar spinner toda vez
             const data = await api.trips.list();
             setTrips(data);
         } catch (error) {
@@ -79,10 +79,10 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         try {
-            // Reload trips
+            // Recarregar viagens
             await loadTrips();
 
-            // Refresh user session to update avatar/metadata
+            // Atualizar sessão do usuário para obter novo avatar/metadados
             const { error } = await supabase.auth.refreshSession();
             if (error) console.log('Error refreshing session:', error);
 
@@ -114,7 +114,7 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
         try {
             setUploading(true);
 
-            // Read file as ArrayBuffer and convert to Base64 to bypass deprecated FileSystem methods and fetch().blob() issues
+            // Ler arquivo como ArrayBuffer e enviar diretamente (Supabase suporta ArrayBuffer)
             const response = await fetch(uri);
             const arrayBuffer = await response.arrayBuffer();
             const fileData = arrayBuffer; // Supabase supports ArrayBuffer directly usually, or we can use Blob if it works.
@@ -156,7 +156,7 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
 
                 if (updateError) throw updateError;
 
-                // Update Auth Metadata so the UI updates automatically via AuthContext
+                // Atualizar Metadados de Auth para que a UI atualize automaticamente via AuthContext
                 const { error: authUpdateError } = await supabase.auth.updateUser({
                     data: { avatar_url: publicUrl }
                 });
@@ -181,7 +181,7 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
             style={[styles.container, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.backgroundLight }]}
             edges={['top', 'left', 'right']}
         >
-            {/* Header */}
+            {/* Cabeçalho */}
             <View style={styles.header}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity onPress={pickImage} disabled={uploading}>
@@ -300,7 +300,12 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
                                 </Text>
                             </TouchableOpacity>
                         ) : (
-                            <TripCard trip={item} isDark={isDark} onDelete={() => handleDeleteTrip(item.id)} />
+                            <TripCard
+                                trip={item}
+                                isDark={isDark}
+                                onDelete={() => handleDeleteTrip(item.id)}
+                                onPress={() => navigation.navigate('TripDetail', { tripId: item.id })}
+                            />
                         )
                     }
                     keyExtractor={(item) => item.id}
@@ -329,10 +334,11 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
     );
 };
 
-const TripCard: React.FC<{ trip: TripRow; isDark: boolean; onDelete: () => void }> = ({ trip, isDark, onDelete }) => (
+const TripCard: React.FC<{ trip: TripRow; isDark: boolean; onDelete: () => void; onPress: () => void }> = ({ trip, isDark, onDelete, onPress }) => (
     <TouchableOpacity
         style={[styles.card, { backgroundColor: isDark ? '#1e2a36' : '#ffffff' }]}
         activeOpacity={0.7}
+        onPress={onPress}
     >
         <View style={styles.cardImageWrapper}>
             <Image
@@ -349,7 +355,18 @@ const TripCard: React.FC<{ trip: TripRow; isDark: boolean; onDelete: () => void 
                     styles.badge,
                     { backgroundColor: 'rgba(19, 127, 236, 0.9)' }
                 ]}>
-                    <Text style={styles.badgeText}>{trip.status === 'planning' ? 'Planejando' : 'Em breve'}</Text>
+                    <Text style={styles.badgeText}>
+                        {(() => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            // Evitar problemas de fuso horário usando substring YYYY-MM-DD
+                            const [y, m, d] = trip.end_date.split('-').map(Number);
+                            const end = new Date(y, m - 1, d);
+
+                            if (end < today) return 'Realizada';
+                            return trip.status === 'planning' ? 'Planejando' : 'Em breve';
+                        })()}
+                    </Text>
                 </View>
             </View>
             <TouchableOpacity

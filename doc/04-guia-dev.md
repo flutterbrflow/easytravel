@@ -271,15 +271,15 @@ import { MOCK_TRIPS } from '../constants';
 ✅ Usar semantic HTML  
 ✅ Adicionar `alt` em imagens  
 ✅ Garantir contraste de cores  
-✅ Keyboard navigation  
+✅ Navegação por teclado  
 
-### Code Quality
+### Qualidade de Código
 ✅ Remover console.logs antes do commit  
 ✅ Comentar código complexo  
 ✅ Manter componentes pequenos e focados  
 ✅ Extrair lógica repetida para funções  
 
-## Debugging
+## Depuração (Debugging)
 
 ### React DevTools
 ```bash
@@ -293,13 +293,13 @@ Firefox: React Developer Tools
 - Error overlay no browser
 - Source maps para debugging
 
-### TypeScript Errors
+### Erros TypeScript
 ```bash
 # Check de tipos
 npx tsc --noEmit
 ```
 
-## Deployment
+## Deploy (Publicação)
 
 ### Build
 ```bash
@@ -308,7 +308,7 @@ npm run build
 
 Gera pasta `/dist` com arquivos otimizados.
 
-### Deploy Platforms
+### Plataformas de Deploy
 - **Vercel** - Recomendado para Vite
 - **Netlify** - Suporte nativo
 - **GitHub Pages** - Gratuito
@@ -323,7 +323,7 @@ npm i -g vercel
 vercel
 ```
 
-## Troubleshooting
+## Solução de Problemas (Troubleshooting)
 
 ### Erro: Cannot find module
 ```bash
@@ -332,7 +332,7 @@ rm -rf node_modules package-lock.json
 npm install
 ```
 
-### Erro: Port já em uso
+### Erro: Porta já em uso
 ```bash
 # Matar processo na porta 5173
 # Windows:
@@ -343,7 +343,7 @@ taskkill /PID <PID> /F
 lsof -ti:5173 | xargs kill
 ```
 
-### TypeScript errors
+### Erros TypeScript
 ```bash
 # Verificar versão
 npx tsc --version
@@ -354,8 +354,8 @@ npm run build
 
 ## Próximos Passos
 
-### Features Planejadas
-- [ ] Backend integration (Supabase)
+### Funcionalidades Planejadas
+- [ ] Integração Backend (Supabase)
 - [ ] Autenticação de usuários
 - [ ] Persistência de dados real
 - [ ] Upload de imagens
@@ -366,9 +366,9 @@ npm run build
 ### Melhorias Técnicas
 - [ ] Testes unitários (Jest + React Testing Library)
 - [ ] Testes E2E (Playwright)
-- [ ] State management (Zustand/Redux)
-- [ ] API layer (React Query)
-- [ ] Form validation (Zod + React Hook Form)
+- [ ] Gerenciamento de Estado (Zustand/Redux)
+- [ ] Camada de API (React Query)
+- [ ] Validação de Formulários (Zod + React Hook Form)
 - [ ] Internacionalização (i18n)
 
 ## Recursos Úteis

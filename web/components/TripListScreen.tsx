@@ -114,11 +114,11 @@ const TripListScreen: React.FC = () => {
 
   return (
     <div className="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark shadow-xl overflow-hidden">
-      {/* Header */}
+      {/* Cabeçalho */}
       <header className="sticky top-0 z-10 bg-background-light dark:bg-background-dark pb-2">
         <div className="flex flex-col gap-2 p-4 pb-2">
           <div className="flex items-center h-12 relative">
-            {/* Left: Avatar */}
+            {/* Esquerda: Avatar */}
             <div className="flex size-12 shrink-0 items-center justify-center z-20">
               <input
                 type="file"
@@ -142,12 +142,12 @@ const TripListScreen: React.FC = () => {
               </label>
             </div>
 
-            {/* Center: Title */}
+            {/* Centro: Título */}
             <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
               <h1 className="text-[#111418] dark:text-white text-lg font-bold">Minhas Viagens</h1>
             </div>
 
-            {/* Right: Settings */}
+            {/* Direita: Configurações */}
             <div className="flex w-12 items-center justify-end ml-auto z-20">
               <button
                 onClick={() => navigate(AppRoute.PROFILE)}
@@ -196,7 +196,7 @@ const TripListScreen: React.FC = () => {
         </div>
       </header>
 
-      {/* Main List - same as before until TripCard mapping */}
+      {/* Lista Principal */}
       <main className="flex-1 overflow-y-auto pb-28 px-4 space-y-4 no-scrollbar">
         {loading ? (
           <div className="flex justify-center py-10">
@@ -226,7 +226,12 @@ const TripListScreen: React.FC = () => {
                   }
                 })
                 .map((trip) => (
-                  <TripCard key={trip.id} trip={trip} onDelete={(e) => handleDeleteTrip(e, trip.id)} />
+                  <TripCard
+                    key={trip.id}
+                    trip={trip}
+                    onDelete={(e) => handleDeleteTrip(e, trip.id)}
+                    onClick={() => navigate(AppRoute.TRIP_DETAIL.replace(':id', trip.id))}
+                  />
                 ))
             ) : (
               <div className="text-center py-10 text-gray-500">
@@ -241,7 +246,7 @@ const TripListScreen: React.FC = () => {
               </div>
             )}
 
-            {/* Add New Trip Button (Inline) - Only for Upcoming */}
+            {/* Botão Nova Viagem (Inline) - Apenas para Próximas */}
             {activeTab === 'upcoming' && (
               <button
                 onClick={() => navigate(AppRoute.NEW_TRIP)}
@@ -260,7 +265,7 @@ const TripListScreen: React.FC = () => {
         )}
       </main>
 
-      {/* FAB - Same */}
+      {/* Botão Flutuante (FAB) */}
       <div className="absolute bottom-24 right-4 z-20">
         <button
           onClick={() => navigate(AppRoute.NEW_TRIP)}
@@ -270,7 +275,7 @@ const TripListScreen: React.FC = () => {
         </button>
       </div>
 
-      {/* Bottom Nav - Same */}
+      {/* Navegação Inferior */}
       <nav className="absolute bottom-0 left-0 w-full bg-white dark:bg-[#101922] border-t border-gray-100 dark:border-[#22303e] pb-safe pt-2 px-2 z-30">
         <div className="flex justify-around items-center h-16 pb-2">
           <NavItem icon="airplane_ticket" label="Viagens" active />
@@ -292,8 +297,8 @@ const formatDateRange = (start: string, end: string) => {
     return `${String(date.getDate() + 1).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
   };
 
-  // Fix timezone offset issue simple hack (dates are YYYY-MM-DD)
-  // Actually, split is better
+  // Correção simples de fuso horário (datas são YYYY-MM-DD)
+  // Na verdade, split é melhor
   const sParts = start.split('-');
   const eParts = end.split('-');
 
@@ -307,8 +312,11 @@ const formatDateRange = (start: string, end: string) => {
   return `${sDay}/${sMonth} - ${eDay}/${eMonth} de ${sYear}`;
 };
 
-const TripCard: React.FC<{ trip: TripRow; onDelete: (e: React.MouseEvent) => void }> = ({ trip, onDelete }) => (
-  <div className="group relative flex flex-col items-stretch justify-start rounded-2xl bg-white dark:bg-[#1e2a36] shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden transition-all hover:shadow-lg">
+const TripCard: React.FC<{ trip: TripRow; onDelete: (e: React.MouseEvent) => void; onClick: () => void }> = ({ trip, onDelete, onClick }) => (
+  <div
+    onClick={onClick}
+    className="group relative flex flex-col items-stretch justify-start rounded-2xl bg-white dark:bg-[#1e2a36] shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden transition-all hover:shadow-lg cursor-pointer"
+  >
     <div
       className="w-full h-40 bg-center bg-no-repeat bg-cover relative"
       style={{ backgroundImage: `url("${trip.image_url || IMAGES.genericMap}")` }}
@@ -318,12 +326,23 @@ const TripCard: React.FC<{ trip: TripRow; onDelete: (e: React.MouseEvent) => voi
         <span
           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-sm bg-primary/90`}
         >
-          {trip.status === 'planning' ? 'Planejando' : 'Em breve'}
+          {(() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const [y, m, d] = trip.end_date.split('-').map(Number);
+            const end = new Date(y, m - 1, d);
+
+            if (end < today) return 'Realizada';
+            return trip.status === 'planning' ? 'Planejando' : 'Em breve';
+          })()}
         </span>
       </div>
       <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
-          onClick={onDelete}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(e);
+          }}
           className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white hover:bg-red-500 transition-colors backdrop-blur-md"
           title="Excluir viagem"
         >

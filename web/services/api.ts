@@ -5,7 +5,9 @@ import { Database } from '../lib/supabase-types';
 export type TripRow = Database['public']['Tables']['trips']['Row'];
 export type TripInsert = Database['public']['Tables']['trips']['Insert'];
 export type ExpenseRow = Database['public']['Tables']['expenses']['Row'];
+export type ExpenseInsert = Database['public']['Tables']['expenses']['Insert'];
 export type MemoryRow = Database['public']['Tables']['memories']['Row'];
+export type MemoryInsert = Database['public']['Tables']['memories']['Insert'];
 
 export const api = {
     trips: {
@@ -23,6 +25,18 @@ export const api = {
             const { data, error } = await supabase
                 .from('trips')
                 .insert(trip)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+
+        async update(id: string, updates: Partial<TripInsert>) {
+            const { data, error } = await supabase
+                .from('trips')
+                .update(updates)
+                .eq('id', id)
                 .select()
                 .single();
 
@@ -51,7 +65,91 @@ export const api = {
         }
     },
 
-    // Placeholder para outros serviços (Despesas, Memórias)
+    expenses: {
+        async list(tripId: string) {
+            const { data, error } = await supabase
+                .from('expenses')
+                .select('*')
+                .eq('trip_id', tripId)
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+            return data;
+        },
+
+        async create(expense: ExpenseInsert) {
+            const { data, error } = await supabase
+                .from('expenses')
+                .insert(expense)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+
+        async delete(id: string) {
+            const { error } = await supabase
+                .from('expenses')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        }
+    },
+
+    memories: {
+        async list(tripId: string) {
+            const { data, error } = await supabase
+                .from('memories')
+                .select('*')
+                .eq('trip_id', tripId)
+                .order('taken_at', { ascending: false });
+
+            if (error) throw error;
+            return data;
+        },
+
+        async create(memory: MemoryInsert) {
+            const { data, error } = await supabase
+                .from('memories')
+                .insert(memory)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+
+        async delete(id: string) {
+            const { error } = await supabase
+                .from('memories')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        },
+
+        uploadImage: async (file: File, userId: string): Promise<string> => {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${userId}/${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('memories') // Bucket name
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            // Try to get public URL first (if bucket is public)
+            // If bucket is private (as per plan), we might need signed URL or authenticated download.
+            // For now assuming we store the path or public URL.
+            // Let's use getPublicUrl for simplicity if RLS allows public read, or we can handle signed urls later.
+            const { data } = supabase.storage.from('memories').getPublicUrl(filePath);
+            return data.publicUrl;
+        }
+    },
+
     storage: {
         upload: async (bucket: string, path: string, file: File, options?: any) => {
             return await supabase.storage.from(bucket).upload(path, file, options);

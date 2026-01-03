@@ -11,7 +11,7 @@
 - Definir destinos, datas de ida e volta
 - Adicionar participantes e compartilhar itinerários
 - Visualizar viagens próximas e passadas
-- Organização por status (planejando, próximas, passadas)
+- Organização por status (planejando, próximas, realizadas)
 
 ### 💰 Controle de Gastos
 - Acompanhar despesas relacionadas a cada viagem
@@ -26,31 +26,33 @@
 ## Tecnologias Utilizadas
 
 ### Versão Web
-- **React** 19.2.3 - Biblioteca JavaScript para construção de interfaces
-- **React Router DOM** 7.11.0 - Gerenciamento de rotas
-- **TypeScript** 5.8.2 - Superset tipado de JavaScript
-- **Vite** 6.2.0 - Build tool e dev server
+- **React** 18+ - Biblioteca JavaScript para construção de interfaces
+- **React Router DOM** 6+ - Gerenciamento de rotas
+- **TypeScript** - Superset tipado de JavaScript
+- **Vite** - Build tool e dev server
 - **Tailwind CSS** - Framework CSS utilitário
-- **Google Fonts** - Plus Jakarta Sans, Noto Sans
-- **Material Symbols** - Ícones do Google
+- **Supabase** - Backend-as-a-Service (Auth, DB, Storage)
+
+### Versão Mobile
+- **React Native** - Framework para apps nativos
+- **Expo** - Plataforma e ferramentas para React Native
+- **Expo Router / React Navigation** - Navegação nativa
 
 ## Estrutura do Projeto
 
 ```
 easytravel/
-├── components/          # Componentes React
-│   ├── WelcomeScreen.tsx
-│   ├── TripListScreen.tsx
-│   └── NewTripScreen.tsx
+├── web/                 # Aplicação Web (React + Vite)
+│   ├── src/
+│   │   ├── components/  # Componentes Web
+│   │   ├── services/    # Serviços (API, Auth)
+│   │   └── App.tsx      # Componente raiz Web
+├── mobile/              # Aplicação Mobile (React Native + Expo)
+│   ├── components/      # Componentes Mobile
+│   ├── services/        # Serviços (API, Auth)
+│   └── App.tsx          # Componente raiz Mobile
 ├── doc/                 # Documentação
-├── App.tsx              # Componente raiz
-├── index.tsx            # Ponto de entrada
-├── types.ts             # Definições TypeScript
-├── constants.ts         # Constantes e dados mock
-├── index.html           # Template HTML
-├── package.json         # Dependências
-├── tsconfig.json        # Configuração TypeScript
-└── vite.config.ts       # Configuração Vite
+└── package.json         # Dependências raiz
 ```
 
 ## Público-Alvo
@@ -62,14 +64,15 @@ easytravel/
 
 ## Status do Projeto
 
-✅ Interface Web Responsiva  
-✅ Modo Escuro/Claro  
-✅ Design Mobile-First  
-✅ Integração Supabase (Web e Mobile)
-✅ Perfil de Usuário com Upload de Avatar
-✅ Exclusão de Viagens
-🚧 Refinamento da UI Mobile (Fases finais)
-📱 Futuras features: Galeria de Memórias, Notificações
+✅ Interface Web Responsiva
+✅ Design Mobile-First na Web e App Nativo
+✅ Integração Supabase Completa (Auth, Banco de Dados, Storage)
+✅ Autenticação (Login, Cadastro, Sessão)
+✅ CRUD de Viagens (Criar, Listar, Editar, Excluir)
+✅ Upload de Imagens (Capa de viagem, Avatar)
+✅ Filtros de Viagens (Próximas, Realizadas)
+🚧 Refinamento de UI/UX em andamento
+🚧 Módulo de Gastos e Memórias (Em desenvolvimento)
 
 ## Licença
 
