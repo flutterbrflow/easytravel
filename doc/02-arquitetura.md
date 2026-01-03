@@ -125,17 +125,21 @@ TypeScript garante type checking em tempo de desenvolvimento.
 ### XSS Protection
 React automaticamente escapa conteúdo renderizado.
 
-## Limitações Atuais
+## Pontos de Atenção
 
-⚠️ **Dados Mock:** Atualmente utiliza dados estáticos
-⚠️ **Sem Backend:** Não há persistência de dados
-⚠️ **Sem Autenticação:** Não implementado
-⚠️ **Estado Global:** Não utiliza state management library (Redux, Zustand)
+⚠️ **Estado Global:** O gerenciamento de estado complexo (além de Auth) ainda depende primariamente de prop drilling e state local. Considerar Context API expandido ou Zustand para features futuras como "Gastos".
+⚠️ **Testes:** Cobertura de testes automatizados (Unitários/E2E) ainda não foi estabelecida.
 
-## Próximos Passos
+## Evolução da Arquitetura
 
-1. Implementar backend (Supabase/Firebase)
-2. Adicionar state management global
-3. Implementar autenticação
-4. Converter para React Native
-5. Adicionar testes automatizados
+1. **Módulo de Gastos (Em breve)**
+   - Criar contexto ou store para gerenciar despesas complexas
+   - Sincronização offline-first (pode exigir mudanças na camada de serviço)
+
+2. **Backend Services**
+   - Refinar Policies RLS para compartilhamento de viagens (Teams/Groups)
+   - Implementar Edge Functions para notificações push
+
+3. **Qualidade**
+   - Configurar pipeline de CI/CD
+   - Adicionar bateria de testes jest/testing-library
