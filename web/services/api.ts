@@ -144,19 +144,19 @@ export const api = {
 
         uploadImage: async (file: File, userId: string): Promise<string> => {
             const fileExt = file.name.split('.').pop();
-            const fileName = `${userId}/${Date.now()}.${fileExt}`;
+            const fileName = `${userId}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
             const filePath = `${fileName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('memories') // Bucket name
+                .from('memories') // Nome do Bucket
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
 
-            // Try to get public URL first (if bucket is public)
-            // If bucket is private (as per plan), we might need signed URL or authenticated download.
-            // For now assuming we store the path or public URL.
-            // Let's use getPublicUrl for simplicity if RLS allows public read, or we can handle signed urls later.
+            // Tentar obter URL pública primeiro (se o bucket for público)
+            // Se o bucket for privado, pode precisar de URL assinada ou download autenticado.
+            // Por enquanto, assumindo que armazenamos o caminho ou URL pública.
+            // Usaremos getPublicUrl por simplicidade se RLS permitir leitura pública, ou lidaremos com urls assinadas depois.
             const { data } = supabase.storage.from('memories').getPublicUrl(filePath);
             return data.publicUrl;
         }

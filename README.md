@@ -37,7 +37,7 @@ easytravel/
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Como Iniciar
 
 ### Web (React + Vite)
 
@@ -218,7 +218,7 @@ npm install
 
 ---
 
-## 🎨 Design System
+## 🎨 Sistema de Design
 
 ### Cores Principais
 - **Primary:** `#137fec` (Azul)
@@ -263,7 +263,7 @@ test: adicionar testes
 
 ---
 
-## 🐛 Troubleshooting
+## 🐛 Resolução de Problemas
 
 ### Web não inicia
 ```bash

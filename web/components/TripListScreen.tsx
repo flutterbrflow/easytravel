@@ -27,7 +27,7 @@ const TripListScreen: React.FC = () => {
       const data = await api.trips.list();
       setTrips(data);
     } catch (error) {
-      console.error('Error loading trips:', error);
+      // Erro ao carregar viagens
     } finally {
       setLoading(false);
     }
@@ -42,7 +42,7 @@ const TripListScreen: React.FC = () => {
         await api.trips.delete(id);
         setTrips(prev => prev.filter(t => t.id !== id));
       } catch (error) {
-        console.error('Error deleting trip:', error);
+        // Erro ao excluir viagem
         alert('Erro ao excluir viagem.');
       }
     }
@@ -105,7 +105,7 @@ const TripListScreen: React.FC = () => {
       }
 
     } catch (error) {
-      console.error('Error uploading avatar:', error);
+      // Erro ao fazer upload do avatar
       alert('Erro ao atualizar avatar. Tente novamente.');
     } finally {
       setUploading(false);

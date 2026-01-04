@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut();
     };
 
-    // Listen for tab focus/visibility to re-validate session
+    // Escutar foco/visibilidade da aba para revalidar a sessão
     useEffect(() => {
         const handleVisibilityChange = async () => {
             if (document.visibilityState === 'visible') {
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (error || !data.session) {
                     setSession(null);
                 } else {
-                    // Start auto refresh if needed or just sync state
+                    // Iniciar atualização automática se necessário ou apenas sincronizar estado
                     setSession(data.session);
                 }
             }

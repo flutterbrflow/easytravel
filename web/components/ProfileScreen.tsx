@@ -10,7 +10,7 @@ const ProfileScreen: React.FC = () => {
     const navigate = useNavigate();
     const { user, signOut } = useAuth();
 
-    // Stats & Profile State
+    // Estado de Estatísticas e Perfil
     const [stats, setStats] = useState({
         trips: 0,
         countries: 0,
@@ -20,47 +20,47 @@ const ProfileScreen: React.FC = () => {
     const [loadingStats, setLoadingStats] = useState(true);
     const [uploading, setUploading] = useState(false);
 
-    // Mock Preferences State
+    // Estado das Preferências (Mock)
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-    const [darkModeEnabled, setDarkModeEnabled] = useState(false); // Should ideally sync with context/system
-
-    useEffect(() => {
-        loadData();
-        // Check for dark mode class
-        if (document.documentElement.classList.contains('dark')) {
-            setDarkModeEnabled(true);
-        }
-    }, []);
+    const [darkModeEnabled, setDarkModeEnabled] = useState(false); // Idealmente sincronizar com context/sistema
 
     const loadData = async () => {
         try {
-            // Load Stats
+            if (!user?.id) return;
+
+            // Carregar estatísticas básicas
             const trips = await api.trips.list();
-            const uniqueCountries = new Set(trips.map(t => t.destination.split(',').pop()?.trim()).filter(Boolean));
-            setStats({
+            const uniqueCountries = new Set(trips.map(t => {
+                const parts = t.destination.split(',');
+                return parts[parts.length - 1].trim();
+            })).size;
+
+            setStats(prev => ({
+                ...prev,
                 trips: trips.length,
-                countries: uniqueCountries.size,
-                photos: 0
-            });
+                countries: uniqueCountries
+            }));
 
-            // Load Profile explicitly to get latest avatar_url and updated_at
-            if (user?.id) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
+            // Carregar Perfil
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
 
-                if (profile) {
-                    setProfileData(profile);
-                }
+            if (profile) {
+                setProfileData(profile);
             }
         } catch (error) {
-            console.error('Error loading data:', error);
+            // Erro ao carregar dados
         } finally {
             setLoadingStats(false);
         }
     };
+
+    useEffect(() => {
+        loadData();
+    }, [user]);
 
     const handleLogout = async () => {
         if (window.confirm("Tem certeza que deseja sair da conta?")) {
@@ -68,7 +68,6 @@ const ProfileScreen: React.FC = () => {
                 await signOut();
                 navigate(AppRoute.LOGIN);
             } catch (error) {
-                console.error('Error signing out:', error);
                 alert('Erro ao sair da conta.');
             }
         }
@@ -115,7 +114,9 @@ const ProfileScreen: React.FC = () => {
 
                 if (updateError) throw updateError;
 
-                // Update local state immediately
+                if (updateError) throw updateError;
+
+                // Atualizar estado local imediatamente
                 setProfileData({ ...profileData, avatar_url: publicUrl, updated_at: now });
 
                 const { error: authError } = await supabase.auth.updateUser({
@@ -125,21 +126,20 @@ const ProfileScreen: React.FC = () => {
                 if (authError) throw authError;
             }
         } catch (error) {
-            console.error('Error uploading avatar:', error);
             alert('Falha ao atualizar foto de perfil.');
         } finally {
             setUploading(false);
         }
     };
 
-    // Determine Avatar URL
-    // Priority: profileData.avatar_url -> user.user_metadata.avatar_url -> Placeholder
-    // Cache bust: profileData.updated_at -> Date.now()
+    // Determinar URL do Avatar
+    // Prioridade: profileData.avatar_url -> user.user_metadata.avatar_url -> Placeholder
+    // Busting de cache: profileData.updated_at -> Date.now()
     const avatarUrl = profileData?.avatar_url || user?.user_metadata?.avatar_url;
     const cacheBuster = profileData?.updated_at ? new Date(profileData.updated_at).getTime() : Date.now();
     const finalAvatarUrl = avatarUrl ? `${avatarUrl}?t=${cacheBuster}` : IMAGES.userAvatar;
 
-    // Edit Profile State
+    // Estado da Edição de Perfil
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editName, setEditName] = useState('');
     const [savingProfile, setSavingProfile] = useState(false);
@@ -168,30 +168,29 @@ const ProfileScreen: React.FC = () => {
             const now = new Date().toISOString();
 
             if (user?.id) {
-                // Update Profile Table
+                // Atualizar Tabela de Perfil
                 const { error: updateError } = await supabase
                     .from('profiles')
                     .upsert({
                         id: user.id,
-                        name: editName.trim(), // Assuming column is 'name' or extend if needed
+                        name: editName.trim(), // Assumindo que a coluna é 'name' ou estenda se necessário
                         updated_at: now,
                     });
 
                 if (updateError) throw updateError;
 
-                // Update Auth Metadata
+                // Atualizar Metadados de Autenticação
                 const { error: authError } = await supabase.auth.updateUser({
                     data: { full_name: editName.trim() }
                 });
 
                 if (authError) throw authError;
 
-                // Update local state
+                // Atualizar estado local
                 setProfileData(prev => ({ ...prev, name: editName.trim(), updated_at: now }));
                 setIsEditModalOpen(false);
             }
         } catch (error) {
-            console.error('Error updating profile:', error);
             alert('Erro ao atualizar perfil.');
         } finally {
             setSavingProfile(false);
@@ -202,7 +201,7 @@ const ProfileScreen: React.FC = () => {
 
     return (
         <div className="relative flex h-full min-h-screen w-full flex-col bg-[#f8fafc] dark:bg-[#101922]">
-            {/* Header */}
+            {/* Cabeçalho */}
             <header className="flex items-center justify-between p-4 bg-[#f8fafc] dark:bg-[#101922] z-10 sticky top-0">
                 <button onClick={() => navigate(AppRoute.LIST)} className="size-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-[#1e2a36]">
                     <span className="material-symbols-outlined text-[#111418] dark:text-white">arrow_back</span>
@@ -217,7 +216,7 @@ const ProfileScreen: React.FC = () => {
             </header>
 
             <main className="flex-1 overflow-y-auto pb-24 px-4 space-y-6 no-scrollbar">
-                {/* User Info */}
+                {/* Informações do Usuário */}
                 <div className="flex flex-col items-center mt-4">
                     <div className="relative mb-4">
                         <div
@@ -259,7 +258,7 @@ const ProfileScreen: React.FC = () => {
                     <StatCard icon="photo_library" value={stats.photos} label="Fotos" />
                 </div>
 
-                {/* Preferences */}
+                {/* Preferências */}
                 <div>
                     <h3 className="text-xs font-bold text-[#9ca3af] dark:text-[#9ba8b8] tracking-widest uppercase mb-3 ml-4">
                         Preferências
@@ -298,7 +297,7 @@ const ProfileScreen: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Logout */}
+                {/* Sair */}
                 <button
                     onClick={handleLogout}
                     className="w-full h-14 bg-[#fef2f2] dark:bg-red-500/10 rounded-2xl flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-500/20 transition-colors"
@@ -308,7 +307,7 @@ const ProfileScreen: React.FC = () => {
                 </button>
             </main>
 
-            {/* Edit Profile Modal */}
+            {/* Modal de Edição de Perfil */}
             {isEditModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white dark:bg-[#1e2a36] rounded-2xl w-full max-w-sm p-6 shadow-xl animate-in fade-in zoom-in duration-200">
@@ -352,7 +351,7 @@ const ProfileScreen: React.FC = () => {
                 </div>
             )}
 
-            {/* Bottom Nav */}
+            {/* Navegação Inferior */}
             <nav className="absolute bottom-0 left-0 w-full bg-white dark:bg-[#101922] border-t border-gray-100 dark:border-[#22303e] pb-safe pt-2 px-2 z-30">
                 <div className="flex justify-around items-center h-16 pb-2">
                     <NavItem icon="airplane_ticket" label="Viagens" onClick={() => navigate(AppRoute.LIST)} />

@@ -20,12 +20,12 @@ const NewTripScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Refresh session to get latest user metadata (avatar)
-    api.trips.list().then(() => { }).catch(() => { }); // Dummy call or just explicit refresh
-    // Better:
+    // Atualizar sessão para obter metadados mais recentes do usuário (avatar)
+    api.trips.list().then(() => { }).catch(() => { }); // Chamada falsa ou apenas atualização explícita
+    // Melhor:
     const refresh = async () => {
       const { error } = await supabase.auth.refreshSession();
-      if (error) console.error(error);
+      // Erro na atualização da sessão ignorado
     };
     refresh();
   }, []);
@@ -35,7 +35,7 @@ const NewTripScreen: React.FC = () => {
       setStartDate(date);
       setEndDate('');
     } else {
-      // Logic to ensure start before end
+      // Lógica para garantir início antes do fim
       if (new Date(date) < new Date(startDate)) {
         setEndDate(startDate);
         setStartDate(date);
@@ -49,10 +49,10 @@ const NewTripScreen: React.FC = () => {
 
   const handleInvite = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.host); // Just copying host for now
+      await navigator.clipboard.writeText(window.location.host); // Apenas copiando host por enquanto
       alert('Link copiado para a área de transferência!');
     } catch (err) {
-      console.error('Failed to copy: ', err);
+      // Falha ao copiar
     }
   };
 
@@ -78,7 +78,7 @@ const NewTripScreen: React.FC = () => {
       let imageUrl = IMAGES.genericMap;
 
       if (coverImage) {
-        // ... (upload logic same as before)
+        // ... (lógica de upload igual a anterior)
         const fileExt = coverImage.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
@@ -88,8 +88,8 @@ const NewTripScreen: React.FC = () => {
         });
 
         if (uploadError) {
-          console.error('Error uploading cover image:', uploadError);
-          // Proceed without custom image if upload fails
+          // Erro ao enviar imagem de capa
+          // Prosseguir sem imagem personalizada se o upload falhar
         } else {
           const { data: { publicUrl } } = api.storage.getPublicUrl('trip-images', filePath);
           imageUrl = publicUrl;
@@ -107,7 +107,6 @@ const NewTripScreen: React.FC = () => {
       });
       navigate(AppRoute.LIST);
     } catch (error: any) {
-      console.error('Error saving trip', error);
       alert('Erro ao salvar viagem: ' + error.message);
     } finally {
       setLoading(false);
@@ -116,7 +115,7 @@ const NewTripScreen: React.FC = () => {
 
   return (
     <div className="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden font-display transition-colors duration-200">
-      {/* Header same as before */}
+      {/* Cabeçalho igual ao anterior */}
       <div className="sticky top-0 z-10 flex items-center bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md p-4 pb-2 justify-between border-b border-gray-200/50 dark:border-gray-800/50">
         <button
           onClick={handleBack}
@@ -136,10 +135,10 @@ const NewTripScreen: React.FC = () => {
         </button>
       </div>
 
-      {/* Scrollable Content */}
+      {/* Conteúdo Rolável */}
       <div className="flex-1 flex flex-col px-4 pb-32 pt-4 gap-6 no-scrollbar overflow-y-auto">
 
-        {/* Destination Input */}
+        {/* Input de Destino */}
         <div className="flex flex-col gap-2">
           <label className="text-[#111418] dark:text-slate-200 text-base font-bold leading-normal">
             Para onde você vai?
@@ -157,7 +156,7 @@ const NewTripScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Cover Image Input */}
+        {/* Input de Imagem de Capa */}
         <div className="flex flex-col gap-2">
           <label className="text-[#111418] dark:text-slate-200 text-base font-bold leading-normal">
             Imagem de Capa
@@ -202,7 +201,7 @@ const NewTripScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Date Selection */}
+        {/* Seleção de Data */}
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center">
             <label className="text-[#111418] dark:text-slate-200 text-base font-bold leading-normal">
@@ -218,7 +217,7 @@ const NewTripScreen: React.FC = () => {
               Limpar
             </button>
           </div>
-          {/* Selected Dates Summary (Optional visual aid) */}
+          {/* Resumo das Datas Selecionadas (Auxílio visual opcional) */}
           <div className="flex gap-4 mb-2">
             <div className="flex-1 p-3 bg-white dark:bg-surface-dark rounded-xl border border-transparent">
               <span className="block text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Ida</span>
@@ -241,7 +240,7 @@ const NewTripScreen: React.FC = () => {
           />
         </div>
 
-        {/* Participants (Mock for now) */}
+        {/* Participantes (Mock por enquanto) */}
         <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center mb-1">
             <h3 className="text-[#111418] dark:text-slate-200 text-lg font-bold leading-tight tracking-[-0.015em]">
@@ -255,16 +254,16 @@ const NewTripScreen: React.FC = () => {
             </button>
           </div>
           <div className="flex items-center gap-4 overflow-x-auto no-scrollbar py-2">
-            {/* Current User */}
+            {/* Usuário Atual */}
             <Participant
               avatar={user?.user_metadata?.avatar_url ? `${user.user_metadata.avatar_url}?t=${new Date().getTime()}` : IMAGES.userAvatar}
               name="Você"
               isUser
             />
-            {/* Mock friends */}
+            {/* Amigos Mock */}
             <Participant avatar={IMAGES.friend1} name="André" />
             <Participant avatar={IMAGES.friend2} name="Sofia" />
-            {/* Add Button */}
+            {/* Botão Adicionar */}
             <button
               onClick={handleAddParticipant}
               className="flex flex-col items-center gap-1 shrink-0 group"
@@ -279,7 +278,7 @@ const NewTripScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Notes */}
+        {/* Notas */}
         <div className="flex flex-col gap-2">
           <label className="text-[#111418] dark:text-slate-200 text-base font-bold leading-normal">
             Notas ou Descrição
@@ -295,7 +294,7 @@ const NewTripScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Sticky Footer CTA */}
+      {/* Rodapé CTA Fixo */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 z-20 md:max-w-md md:mx-auto">
         <button
           onClick={handleSave}
@@ -310,7 +309,7 @@ const NewTripScreen: React.FC = () => {
   );
 };
 
-// Sub-components for NewTripScreen
+// Sub-componentes para NewTripScreen
 const Participant: React.FC<{ avatar: string; name: string; isUser?: boolean }> = ({ avatar, name, isUser }) => (
   <div className="flex flex-col items-center gap-1 shrink-0">
     <div className="relative">

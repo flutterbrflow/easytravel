@@ -60,7 +60,6 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                     const fileName = asset.uri.split('/').pop();
                     const docDir = (FileSystem as any).documentDirectory || (FileSystem as any).cacheDirectory;
                     if (!docDir) {
-                        console.warn('Nenhum diretório de escrita disponível. Usando URI original.');
                         setCoverImage(asset.uri);
                         return;
                     }
@@ -71,7 +70,6 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                     });
                     setCoverImage(newPath);
                 } catch (e) {
-                    console.error('Erro ao salvar imagem localmente:', e);
                     setCoverImage(asset.uri); // Fallback para cache uri
                 }
             }
@@ -136,7 +134,6 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                 Alert.alert('Permissão negada', 'Precisamos de acesso aos contatos para adicionar participantes.');
             }
         } catch (e) {
-            console.log(e);
             Alert.alert('Adicionar', 'Simulação: Participante adicionado.');
         }
     };
@@ -179,7 +176,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                             });
 
                         if (uploadError) {
-                            console.error('Erro ao enviar imagem da viagem:', uploadError);
+                            // Erro ao enviar imagem da viagem
                         } else {
                             const { data: { publicUrl } } = supabase.storage
                                 .from('trip-images')
@@ -187,10 +184,10 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                             imageUrl = publicUrl;
                         }
                     } catch (e) {
-                        console.error('Erro ao ler/enviar imagem:', e);
+                        // Erro ao ler/enviar imagem
                     }
                 } else {
-                    console.log('Offline: Usando imagem local temporariamente');
+                    // Offline: Usando imagem local temporariamente
                     imageUrl = coverImage;
                 }
             }
@@ -207,7 +204,6 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
 
             navigation.goBack();
         } catch (error: any) {
-            console.error('Erro ao salvar viagem', error);
             Alert.alert('Erro', 'Não foi possível salvar a viagem: ' + error.message);
         } finally {
             setLoading(false);

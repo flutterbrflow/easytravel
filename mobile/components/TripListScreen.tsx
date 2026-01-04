@@ -53,11 +53,11 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
 
     const loadTrips = async () => {
         try {
-            // setLoading(true); // Opcional: se quisermos mostrar spinner toda vez
+            // setLoading(true); // Opcional: para mostrar indicador de carga
             const data = await api.trips.list();
             setTrips(data);
         } catch (error) {
-            console.error('Erro ao carregar viagens', error);
+            // Erro ao carregar viagens
         } finally {
             setLoading(false);
         }
@@ -77,7 +77,6 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
                             await api.trips.delete(id);
                             setTrips(prev => prev.filter(t => t.id !== id));
                         } catch (error) {
-                            console.error('Erro ao excluir viagem:', error);
                             Alert.alert('Erro', 'Não foi possível excluir a viagem.');
                         }
                     }
@@ -97,22 +96,24 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
             if (isOnline && syncNow) {
                 await syncNow(); // Push/Pull
                 const { error } = await supabase.auth.refreshSession();
-                if (error) console.log('Erro ao atualizar sessão:', error);
+                if (error) {
+                    // Erro ao atualizar sessão
+                }
             }
 
             // Recarregar dados locais (pode ter mudado após sync)
             await loadTrips();
         } catch (error) {
-            console.error('Erro ao atualizar:', error);
+            // Erro ao atualizar
         } finally {
             setRefreshing(false);
         }
-    }, []);
+    }, [checkConnectivity, syncNow]);
 
     const pickImage = async () => {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'], // Updated to use the correct enum value if checking types, but string array is standard for simpler usage or checking documentation
+                mediaTypes: ['images'],
                 allowsEditing: true,
                 aspect: [1, 1],
                 quality: 0.5,
@@ -122,7 +123,7 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
                 await uploadAvatar(result.assets[0].uri);
             }
         } catch (error) {
-            console.error('Erro ao selecionar imagem:', error);
+            // Erro ao selecionar imagem
         }
     };
 
@@ -133,20 +134,7 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
             // Ler arquivo como ArrayBuffer e enviar diretamente (Supabase suporta ArrayBuffer)
             const response = await fetch(uri);
             const arrayBuffer = await response.arrayBuffer();
-            const fileData = arrayBuffer; // Supabase supports ArrayBuffer directly usually, or we can use Blob if it works.
-            // Actually, let's send the ArrayBuffer directly if supabase-js supports it.
-            // If supabase needs explicit BodyInit that is a Blob, we might need to construct one,
-            // but usually ArrayBuffer works or we can just send the decoded data.
-
-            // Wait, supabase-js upload accepts: File, Blob, Buffer, ArrayBuffer, WebSocket, FormData
-            // So ArrayBuffer is fine! We don't even need to decode to Base64 if we don't want to.
-            // BUT earlier I used 'decode(base64)' which creates an ArrayBuffer.
-            // So 'fileData' should be ArrayBuffer. 
-            // So:
-            // const response = await fetch(uri);
-            // const fileData = await response.arrayBuffer();
-
-            // The logic below uses fileData. Let's try this.
+            const fileData = arrayBuffer;
 
             const fileExt = uri.split('.').pop();
             const fileName = `${user?.id || 'unknown'}/avatar.${fileExt}`;
@@ -178,21 +166,14 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
                 });
 
                 if (authUpdateError) throw authUpdateError;
-
-                // Force a local state update if needed, but the AuthContext subscription should handle it.
-                // We can also alert success
-                // alert('Avatar atualizado com sucesso!');
             }
 
         } catch (error) {
-            console.error('Erro ao enviar avatar:', error);
-            // alert('Erro ao atualizar avatar'); 
+            // Erro ao enviar avatar
         } finally {
             setUploading(false);
         }
     };
-
-
 
     const [avatarError, setAvatarError] = useState(false);
     const avatarUrl = user?.user_metadata?.avatar_url;

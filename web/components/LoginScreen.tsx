@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { IMAGES } from '../constants';
+import { AppRoute } from '../types';
 
 const LoginScreen: React.FC = () => {
     const [name, setName] = useState('');
@@ -51,7 +52,7 @@ const LoginScreen: React.FC = () => {
                     }
                     throw error;
                 }
-                navigate('/list');
+                navigate(AppRoute.LIST);
             }
         } catch (err: any) {
             setError(err.message);

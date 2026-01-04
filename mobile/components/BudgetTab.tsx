@@ -37,31 +37,30 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
             Alert.alert('Sucesso', 'Orçamento atualizado!');
             if (onRefresh) onRefresh();
         } catch (error) {
-            console.error('Erro no orçamento:', error);
             Alert.alert('Erro', 'Falha ao atualizar orçamento');
         } finally {
             setLoadingBudget(false);
         }
     };
 
-    // 1. Filter Logic
+    // 1. Lógica de Filtro
     const filteredExpenses = useMemo(() => {
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        // Last 7 days
+        // Últimos 7 dias
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - 7);
         startOfWeek.setHours(0, 0, 0, 0);
 
-        // Last 30 days
+        // Últimos 30 dias
         const startOfMonth = new Date(now);
         startOfMonth.setDate(now.getDate() - 30);
         startOfMonth.setHours(0, 0, 0, 0);
 
         return expenses.filter(e => {
-            // Strip time for comparison
-            const expFull = new Date(e.date + 'T12:00:00'); // Safety for YYYY-MM-DD
+            // Remover tempo para comparação
+            const expFull = new Date(e.date + 'T12:00:00'); // Segurança para YYYY-MM-DD
             const exp = new Date(expFull.getFullYear(), expFull.getMonth(), expFull.getDate());
 
             switch (filter) {
@@ -73,13 +72,13 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
         });
     }, [expenses, filter]);
 
-    // 2. Calculations
+    // 2. Cálculos
     const totalSpent = filteredExpenses.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
     const budget = (trip as any).budget || 0; // Real DB value
     const available = budget - totalSpent;
     const progress = Math.min(totalSpent / budget, 1);
 
-    // Group by Category
+    // Agrupar por Categoria
     const categoryStats = useMemo(() => {
         const stats: Record<string, number> = {};
         filteredExpenses.forEach(e => {
@@ -90,11 +89,11 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
             .sort((a, b) => b.total - a.total);
     }, [filteredExpenses, totalSpent]);
 
-    // Group by Date for Transactions
+    // Agrupar por Data para Transações
     const groupedTransactions = useMemo(() => {
         const groups: Record<string, ExpenseRow[]> = {};
         filteredExpenses.forEach(e => {
-            // Fix timezone issue: Manual parse YYYY-MM-DD
+            // Correção de fuso horário: Parse manual YYYY-MM-DD
             // e.date comes from DB as YYYY-MM-DD
             const [year, month, day] = e.date.split('-');
             const dateStr = `${day}/${month}/${year}`;
@@ -105,7 +104,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
         return groups;
     }, [filteredExpenses]);
 
-    // --- Sub Components ---
+    // --- Sub Componentes ---
 
     const FilterPill = ({ label, value }: { label: string, value: TimeFilter }) => (
         <TouchableOpacity
@@ -136,7 +135,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
         }
     };
 
-    // Refresh State
+    // Estado de Atualização
     const [refreshing, setRefreshing] = useState(false);
 
     const onRefreshHandler = async () => {
@@ -159,7 +158,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
 
     return (
         <View style={styles.container}>
-            {/* 1. Filters */}
+            {/* 1. Filtros */}
             <View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContainer}>
                     {renderFilter('period', 'Todo o Período')}
@@ -170,7 +169,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
             </View>
 
             <View style={{ flex: 1 }}>
-                {/* 2. Balance Card */}
+                {/* 2. Cartão de Saldo */}
                 <View style={styles.balanceCard}>
                     <View style={styles.balanceHeader}>
                         <Text style={styles.balanceLabel}>SALDO DISPONÍVEL (GLOBAL)</Text>
@@ -188,7 +187,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                     <Text style={styles.percentageText}>{Math.round(progress * 100)}% DO ORÇAMENTO TOTAL</Text>
                 </View>
 
-                {/* 3. Category Cards */}
+                {/* 3. Cartões de Categoria */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Categorias</Text>
                 </View>
@@ -204,7 +203,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                     ))}
                 </ScrollView>
 
-                {/* 4. Distribution */}
+                {/* 4. Distribuição */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Distribuição</Text>
                     <TouchableOpacity onPress={() => { setNewBudget((trip as any).budget?.toString() || ''); setIsBudgetModalOpen(true); }}>
@@ -229,7 +228,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                     {categoryStats.length === 0 && <Text style={{ textAlign: 'center', color: '#9CA3AF', marginVertical: 10 }}>Nenhuma despesa</Text>}
                 </View>
 
-                {/* 5. Transactions */}
+                {/* 5. Transações */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Transações</Text>
                 </View>

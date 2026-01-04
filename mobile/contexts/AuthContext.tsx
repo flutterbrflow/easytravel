@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
@@ -29,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (error) throw error;
                 setSession(session);
             } catch (e) {
-                console.log('Sessão offline ou erro de auth inicial (ignorado)');
+                // Sessão offline ou erro de auth inicial (ignorado)
             } finally {
                 setLoading(false);
             }
@@ -43,14 +42,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
         });
 
-        // Listen for AppState changes to re-validate session
+        // Observar mudanças no AppState para revalidar a sessão
         const appStateSubscription = AppState.addEventListener('change', async (nextAppState) => {
             if (nextAppState === 'active') {
                 try {
                     const { data, error } = await supabase.auth.getSession();
                     if (error) {
-                        // Token might be invalid or expired, just clear session
-                        console.log('Erro ao atualizar sessão (tratado):', error.message);
+                        // Token pode estar inválido ou expirado, apenas limpa a sessão
                         setSession(null);
                     } else if (!data.session) {
                         setSession(null);
@@ -71,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const signOut = async () => {
         await supabase.auth.signOut();
-        setSession(null); // Force UI update
+        setSession(null); // Forçar atualização da UI
     };
 
     const value = {

@@ -14,7 +14,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({ startDate, endDate, onS
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Sunday
+    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Domingo
 
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];

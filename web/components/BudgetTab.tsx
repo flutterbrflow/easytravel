@@ -14,12 +14,12 @@ type TimeFilter = 'period' | 'today' | 'week' | 'month';
 const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onEditExpense, onDeleteExpense }) => {
     const [filter, setFilter] = useState<TimeFilter>('period');
 
-    // State for Budget Config
+    // Estado para Configuração de Orçamento
     const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
     const [newBudget, setNewBudget] = useState(trip.budget?.toString() || '');
     const [loadingBudget, setLoadingBudget] = useState(false);
 
-    // Update Budget Handler
+    // Manipulador de Atualização de Orçamento
     const handleUpdateBudget = async () => {
         try {
             setLoadingBudget(true);
@@ -33,14 +33,13 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
             await api.trips.update(trip.id, { budget: budgetValue });
             window.location.reload();
         } catch (error: any) {
-            console.error(error);
             alert(`Erro ao atualizar orçamento: ${error.message || 'Tente novamente.'}`);
         } finally {
             setLoadingBudget(false);
         }
     };
 
-    // Temporary Seed Data
+    // Dados de Teste Temporários (Seed)
     const handleSeedData = async () => {
         if (!confirm('Deseja adicionar dados de exemplo?')) return;
         try {
@@ -48,7 +47,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
             const descs = ['Café', 'Uber', 'Cinema', 'Airbnb', 'Lembrancinha'];
             const today = new Date();
 
-            // Generate dates for: Today, Week (3 days ago), Month (15 days ago)
+            // Gerar datas para: Hoje, Semana (3 dias atrás), Mês (15 dias atrás)
             const dateToday = today.toISOString().split('T')[0];
 
             const dWeek = new Date(today);
@@ -61,7 +60,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
 
             const payloads = [
                 { desc: 'Almoço Hoje', amount: 50, cat: 'Alimentação', date: dateToday },
-                { desc: 'Uber Ontem', amount: 25, cat: 'Transporte', date: dateWeek }, // Technically 'Week' includes today, but let's vary
+                { desc: 'Uber Ontem', amount: 25, cat: 'Transporte', date: dateWeek }, // Tecnicamente 'Semana' inclui hoje, mas vamos variar
                 { desc: 'Hotel Mês Passado', amount: 500, cat: 'Hospedagem', date: dateMonth },
                 { desc: 'Cinema Semana', amount: 80, cat: 'Lazer', date: dateWeek },
                 { desc: 'Jantar Hoje', amount: 120, cat: 'Alimentação', date: dateToday },
@@ -80,25 +79,24 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
             alert('Dados inseridos! Atualize a página.');
             window.location.reload();
         } catch (e) {
-            console.error(e);
             alert('Erro ao semear dados.');
         }
     };
 
 
-    // 1. Filter Logic
+    // 1. Lógica de Filtro
     const filteredExpenses = useMemo(() => {
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Local Midnight
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Meia-noite local
 
-        // String for strict 'today' comparison
+        // String para comparação estrita de 'hoje'
         const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-        // Week: Last 7 days
+        // Semana: Últimos 7 dias
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - 7);
 
-        // Month: Last 30 days
+        // Mês: Últimos 30 dias
         const startOfMonth = new Date(today);
         startOfMonth.setDate(today.getDate() - 30);
 
@@ -108,26 +106,26 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                     return e.date === todayStr;
                 case 'week':
                 case 'month': {
-                    // Manual parse to ensure local time comparison
+                    // Parse manual para garantir comparação de hora local
                     const [y, m, d] = e.date.split('-').map(Number);
-                    const expenseDate = new Date(y, m - 1, d); // Local Midnight
+                    const expenseDate = new Date(y, m - 1, d); // Meia-noite local
 
                     if (filter === 'week') return expenseDate >= startOfWeek;
                     if (filter === 'month') return expenseDate >= startOfMonth;
                     return true;
                 }
-                default: return true; // 'period' = all
+                default: return true; // 'period' = todos
             }
         });
     }, [expenses, filter]);
 
-    // 2. Calculations
+    // 2. Cálculos
     const totalSpent = filteredExpenses.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-    const budget = (trip as any).budget || 0; // Use DB budget or 0
+    const budget = (trip as any).budget || 0; // Usar orçamento do BD ou 0
     const available = budget - totalSpent;
-    const progress = budget > 0 ? Math.min(totalSpent / budget, 1) : 0; // Handle division by zero
+    const progress = budget > 0 ? Math.min(totalSpent / budget, 1) : 0; // Tratar divisão por zero
 
-    // Group by Category
+    // Agrupar por Categoria
     const categoryStats = useMemo(() => {
         const stats: Record<string, number> = {};
         filteredExpenses.forEach(e => {
@@ -138,11 +136,11 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
             .sort((a, b) => b.total - a.total);
     }, [filteredExpenses, totalSpent]);
 
-    // Group by Date for Transactions
+    // Agrupar por Data para Transações
     const groupedTransactions = useMemo(() => {
         const groups: Record<string, ExpenseRow[]> = {};
         filteredExpenses.forEach(e => {
-            // Fix timezone issue: Manual parse YYYY-MM-DD
+            // Corrigir problema de fuso horário: Parse manual AAAA-MM-DD
             const [year, month, day] = e.date.split('-');
             const dateStr = `${day}/${month}/${year}`;
 
@@ -152,19 +150,19 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
         return groups;
     }, [filteredExpenses]);
 
-    // Helpers
+    // Auxiliares
     const getCategoryIcon = (cat: string) => {
         switch (cat.toLowerCase()) {
             case 'alimentação': return 'restaurant';
-            case 'transporte': return 'directions_car'; // Material Icon name
-            case 'lazer': return 'local_activity'; // Material Icon name
+            case 'transporte': return 'directions_car'; // Nome do ícone Material
+            case 'lazer': return 'local_activity'; // Nome do ícone Material
             case 'hospedagem': return 'hotel';
             default: return 'shopping_cart';
         }
     };
 
     const getCategoryColorClass = (cat: string) => {
-        // Returning Tailwind classes for colors
+        // Retornando classes do Tailwind para cores
         switch (cat.toLowerCase()) {
             case 'alimentação': return 'text-orange-500 bg-orange-100';
             case 'transporte': return 'text-blue-500 bg-blue-100';
@@ -174,7 +172,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
         }
     };
     const getCategoryBgColor = (cat: string) => {
-        // Inline style fallback for width/color specific logic if needed
+        // Fallback de estilo inline para lógica específica de largura/cor se necessário
         switch (cat.toLowerCase()) {
             case 'alimentação': return '#F97316';
             case 'transporte': return '#3B82F6';
@@ -186,7 +184,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
 
     return (
         <div className="space-y-8 animate-fade-in pb-24 relative min-h-full">
-            {/* 1. Header & Filters */}
+            {/* 1. Cabeçalho e Filtros */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex flex-wrap bg-white dark:bg-[#1e2a36] p-1 rounded-2xl sm:rounded-full border border-gray-200 dark:border-gray-800 shadow-sm w-full sm:w-auto">
                     {(['period', 'today', 'week', 'month'] as TimeFilter[]).map((f) => (
@@ -206,7 +204,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                 </div>
             </div>
 
-            {/* 2. Balance Card */}
+            {/* 2. Cartão de Saldo */}
             <div className="bg-white dark:bg-[#1e2a36] rounded-3xl p-8 border border-gray-100 dark:border-gray-800 shadow-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-10">
                     <span className="material-symbols-outlined text-9xl">account_balance_wallet</span>
@@ -241,9 +239,9 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                 </div>
             </div>
 
-            {/* 3. Category Breakdown (Now Stacked) */}
+            {/* 3. Detalhamento por Categoria (Agora Empilhado) */}
             <div className="space-y-8">
-                {/* Categories */}
+                {/* Categorias */}
                 <div className="space-y-4">
                     <h3 className="text-[16px] font-bold text-[#333] dark:text-white">Categorias</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -261,7 +259,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                     </div>
                 </div>
 
-                {/* Distribution List */}
+                {/* Lista de Distribuição */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="text-[16px] font-bold text-[#333] dark:text-white">Distribuição</h3>
@@ -297,7 +295,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                 </div>
             </div>
 
-            {/* 4. Transactions List */}
+            {/* 4. Lista de Transações */}
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <h3 className="text-[16px] font-bold text-[#333] dark:text-white">Transações</h3>
@@ -346,7 +344,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                 ))}
             </div>
 
-            {/* FAB Button - Sticky within the content flow */}
+            {/* Botão FAB - Fixo dentro do fluxo de conteúdo */}
             <div className="sticky bottom-6 float-right right-0 z-50">
                 <button
                     onClick={onAddExpense}
@@ -357,7 +355,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                 </button>
             </div>
 
-            {/* Budget Modal */}
+            {/* Modal de Orçamento */}
             {isBudgetModalOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
                     <div className="bg-white dark:bg-[#1e2a36] rounded-3xl w-full max-w-sm shadow-2xl border border-gray-100 dark:border-gray-800">

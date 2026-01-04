@@ -21,7 +21,7 @@ const App: React.FC = () => {
     <AuthProvider>
       <HashRouter>
         <div className="flex justify-center min-h-screen bg-gray-100 dark:bg-black">
-          {/* Mobile container wrapper */}
+          {/* Container Mobile Wrapper */}
           <div className="w-full max-w-md h-full min-h-screen bg-white dark:bg-[#101922] shadow-2xl overflow-hidden relative">
             <Routes>
               <Route path={AppRoute.WELCOME} element={<WelcomeScreen />} />

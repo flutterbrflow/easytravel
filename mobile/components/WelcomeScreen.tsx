@@ -24,9 +24,9 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={[styles.container, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.surfaceLight }]}>
-            {/* Main Content Area */}
+            {/* Área de Conteúdo Principal */}
             <View style={styles.content}>
-                {/* Hero Section */}
+                {/* Seção Hero */}
                 <View style={styles.heroContainer}>
                     <View style={styles.heroImageWrapper}>
                         <Image
@@ -38,7 +38,7 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* Text Content */}
+                {/* Conteúdo de Texto */}
                 <View style={styles.textContent}>
                     <Text style={[styles.title, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
                         Explore o Mundo{'\n'}sem Estresse
@@ -47,7 +47,7 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
                         Organize roteiros, controle gastos e guarde memórias incríveis em um só lugar.
                     </Text>
 
-                    {/* Feature Icons */}
+                    {/* Ícones de Funcionalidades */}
                     <View style={styles.features}>
                         <FeatureIcon icon="map" label="Roteiros" isDark={isDark} />
                         <FeatureIcon icon="cash" label="Gastos" isDark={isDark} />
@@ -56,16 +56,16 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
                 </View>
             </View>
 
-            {/* Footer Actions */}
+            {/* Ações de Rodapé */}
             <View style={[styles.footer, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.surfaceLight }]}>
-                {/* Indicators */}
+                {/* Indicadores */}
                 <View style={styles.indicators}>
                     <View style={[styles.indicator, styles.indicatorActive]} />
                     <View style={[styles.indicator, { backgroundColor: isDark ? '#3e4a56' : '#dbe0e6' }]} />
                     <View style={[styles.indicator, { backgroundColor: isDark ? '#3e4a56' : '#dbe0e6' }]} />
                 </View>
 
-                {/* Action Button */}
+                {/* Botão de Ação */}
                 <TouchableOpacity
                     style={styles.button}
                     onPress={() => navigation.navigate('Login')}
@@ -75,8 +75,8 @@ const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
                     <MaterialCommunityIcons name="arrow-right" size={20} color="#ffffff" />
                 </TouchableOpacity>
 
-                {/* Login Link */}
-                {/* Login Link Removed */}
+                {/* Link de Login */}
+                {/* Link de Login Removido */}
                 <View style={styles.loginContainer}>
                 </View>
             </View>
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     heroImageWrapper: {
         width: '100%',
         aspectRatio: 3 / 4,
-        // Removed elevation and shadow to blend with background
+        // Elevação e sombra removidas para misturar com o fundo
         alignItems: 'center',
         justifyContent: 'center',
     },

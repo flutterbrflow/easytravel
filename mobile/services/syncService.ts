@@ -21,13 +21,12 @@ export const SyncService = {
             await this.pullDeletions('expenses');
             await this.pullDeletions('memories');
 
-            console.log('Sincronização (Pull) completa');
         } catch (e: any) {
             const msg = e.message || JSON.stringify(e);
             if (msg.includes('Network request failed') || msg.includes('network')) {
-                console.log('Sincronização pausada (Offline)');
+                // Sincronização pausada (Offline)
             } else {
-                console.error('Falha na sincronização (Pull):', e);
+                // Falha na sincronização (Pull)
             }
         }
     },
@@ -41,18 +40,12 @@ export const SyncService = {
 
     async uploadFileToStorage(localUri: string, bucket: string, path: string): Promise<string | null> {
         try {
-            console.log(`[Storage] Iniciando upload: ${bucket}/${path}`);
-            console.log(`[Storage] URI local: ${localUri}`);
-
             const response = await fetch(localUri);
             if (!response.ok) {
-                console.error(`[Storage] Falha ao ler arquivo local. Status: ${response.status}`);
                 return null;
             }
 
             const arrayBuffer = await response.arrayBuffer();
-            const fileSizeMB = (arrayBuffer.byteLength / 1024 / 1024).toFixed(2);
-            console.log(`[Storage] Arquivo lido: ${fileSizeMB}MB`);
 
             const { error: uploadError } = await supabase.storage
                 .from(bucket)
@@ -62,20 +55,12 @@ export const SyncService = {
                 });
 
             if (uploadError) {
-                console.error(`[Storage] ❌ Erro upload (${bucket}):`);
-                console.error('Mensagem:', uploadError.message);
-                console.error('Detalhes:', JSON.stringify(uploadError, null, 2));
                 return null;
             }
 
             const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-            console.log(`[Storage] ✅ Upload concluído: ${data.publicUrl}`);
             return data.publicUrl;
         } catch (e: any) {
-            const msg = e.message || JSON.stringify(e);
-            console.error('[Storage] ❌ Exceção ao fazer upload:');
-            console.error('Erro:', msg);
-            console.error('Stack:', e.stack);
             return null;
         }
     },
@@ -137,8 +122,6 @@ export const SyncService = {
 
         if (mutations.length === 0) return;
 
-        console.log(`Processando ${mutations.length} alterações...`);
-
         // 2. Processar fila
         for (const mutation of mutations) {
             try {
@@ -147,27 +130,27 @@ export const SyncService = {
 
                 // 2a. Interceptar Imagens Locais (file://) e Fazer Upload
                 if (payload.image_url && payload.image_url.startsWith('file://')) {
-                    console.log(`Detectada imagem local na tabela ${table_name}. Tentando upload...`);
                     const fileExt = payload.image_url.split('.').pop() || 'jpg';
                     let bucket = 'trip-images';
                     if (table_name === 'memories') bucket = 'memories';
                     if (table_name === 'profiles') bucket = 'avatars';
 
                     const userId = payload.user_id || 'unsorted';
-                    const fileName = `${userId}/${Date.now()}_sync.${fileExt}`;
+                    // Usar timestamp para garantir unicidade e path limpo
+                    const fileName = `${userId}/${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
 
                     const publicUrl = await this.uploadFileToStorage(payload.image_url, bucket, fileName);
 
                     if (publicUrl) {
                         payload.image_url = publicUrl;
-                        console.log('Imagem enviada com sucesso. URL atualizada:', publicUrl);
 
-                        // Atualizar também no banco local para corrigir o caminho antigo
+                        // Atualizar também no banco local para corrigir o caminho antigo e evitar re-upload desnecessário se falhar depois
                         await db.runAsync(`UPDATE ${table_name} SET image_url = ? WHERE id = ?`, [publicUrl, record_id]);
                     } else {
-                        console.warn('⚠️ Falha no upload. Removendo image_url do payload.');
-                        delete payload.image_url;
-                        await db.runAsync(`UPDATE ${table_name} SET image_url = NULL WHERE id = ?`, [record_id]);
+                        // Falha crítica no upload da imagem para ${table_name} (ID: ${record_id}).
+                        // Abortando sincronização deste item para tentar novamente mais tarde. Item permanece na fila.
+                        // Pula para a próxima mutação, mantendo esta na fila para retry
+                        continue;
                     }
                 }
 
@@ -184,10 +167,10 @@ export const SyncService = {
             } catch (e: any) {
                 const msg = e.message || JSON.stringify(e);
                 if (msg.includes('Network request failed') || msg.includes('network')) {
-                    console.log(`Push pausado para mutation ${mutation.id} (Offline)`);
+                    // Push pausado para mutation ${mutation.id} (Offline)
                     break;
                 } else {
-                    console.error(`Falha ao enviar alteração ${mutation.id}:`, e);
+                    // Falha ao enviar alteração ${mutation.id}:
                 }
             }
         }
@@ -214,14 +197,13 @@ export const SyncService = {
             const toDelete = localIds.filter(id => !remoteIds.has(id) && !pendingInsertIds.has(id));
 
             if (toDelete.length > 0) {
-                console.log(`Sincronizando remoções: Excluindo ${toDelete.length} itens de ${tableName} locais.`);
                 const placeholders = toDelete.map(() => '?').join(',');
                 await db.runAsync(`DELETE FROM ${tableName} WHERE id IN (${placeholders})`, toDelete);
             }
         } catch (e: any) {
             const msg = e.message || JSON.stringify(e);
             if (!msg.includes('Network request failed')) {
-                console.error(`Falha ao sincronizar remoções de ${tableName}:`, e);
+                // Falha ao sincronizar remoções de ${tableName}
             }
         }
     }

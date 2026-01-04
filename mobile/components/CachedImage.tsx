@@ -24,7 +24,6 @@ export const CachedImage: React.FC<CachedImageProps> = ({ uri, placeholder, styl
 
             // Se já for local, usa direto
             if (uri.startsWith('file://')) {
-                console.log('[CachedImage] Usando arquivo local:', uri);
                 setLocalUri(uri);
                 setLoading(false);
                 return;
@@ -35,7 +34,6 @@ export const CachedImage: React.FC<CachedImageProps> = ({ uri, placeholder, styl
                 const cacheDir = (FileSystem as any).documentDirectory + 'image_cache/';
                 const dirInfo = await FileSystem.getInfoAsync(cacheDir);
                 if (!dirInfo.exists) {
-                    console.log('[CachedImage] Criando diretório de cache:', cacheDir);
                     await FileSystem.makeDirectoryAsync(cacheDir, { intermediates: true });
                 }
 
@@ -46,7 +44,6 @@ export const CachedImage: React.FC<CachedImageProps> = ({ uri, placeholder, styl
                 // Verifica se já existe em cache
                 const fileInfo = await FileSystem.getInfoAsync(fileUri);
                 if (fileInfo.exists) {
-                    console.log('[CachedImage] Imagem encontrada no cache:', fileName);
                     if (isMounted) {
                         setLocalUri(fileUri);
                         setLoading(false);
@@ -56,17 +53,14 @@ export const CachedImage: React.FC<CachedImageProps> = ({ uri, placeholder, styl
 
                 // Baixa se não existir ou se for remote url
                 if (uri.startsWith('http')) {
-                    console.log('[CachedImage] Baixando imagem:', fileName);
                     const downloadRes = await FileSystem.downloadAsync(uri, fileUri);
                     if (isMounted && downloadRes.status === 200) {
-                        console.log('[CachedImage] Download concluído:', fileName);
                         setLocalUri(downloadRes.uri);
                     } else {
-                        console.warn('[CachedImage] Falha no download, status:', downloadRes.status);
+                        // Falha no download
                     }
                 }
             } catch (e) {
-                console.log('[CachedImage] Erro no cache de imagem:', e);
                 // Em caso de erro, tenta usar a URI original se possível (fallback do componente Image)
                 if (isMounted) setLocalUri(uri);
             } finally {

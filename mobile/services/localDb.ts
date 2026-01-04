@@ -3,11 +3,11 @@ import * as SQLite from 'expo-sqlite';
 const db = SQLite.openDatabaseSync('easytravel.db');
 
 export const initDB = () => {
-    try {
-        db.execSync(`
+  try {
+    db.execSync(`
       PRAGMA journal_mode = WAL;
       
-      -- Trips Table
+      -- Tabela de Viagens
       CREATE TABLE IF NOT EXISTS trips (
         id TEXT PRIMARY KEY NOT NULL,
         destination TEXT NOT NULL,
@@ -23,7 +23,7 @@ export const initDB = () => {
         is_synced INTEGER DEFAULT 1
       );
 
-      -- Expenses Table
+      -- Tabela de Despesas
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY NOT NULL,
         trip_id TEXT NOT NULL,
@@ -38,11 +38,11 @@ export const initDB = () => {
         FOREIGN KEY (trip_id) REFERENCES trips (id) ON DELETE CASCADE
       );
 
-      -- Memories Table
+      -- Tabela de Memórias
       CREATE TABLE IF NOT EXISTS memories (
         id TEXT PRIMARY KEY NOT NULL,
         trip_id TEXT NOT NULL,
-        image_url TEXT NOT NULL,
+        image_url TEXT,
         caption TEXT,
         location TEXT,
         taken_at TEXT,
@@ -53,7 +53,7 @@ export const initDB = () => {
         FOREIGN KEY (trip_id) REFERENCES trips (id) ON DELETE CASCADE
       );
 
-      -- Profiles Table
+      -- Tabela de Perfis
       CREATE TABLE IF NOT EXISTS profiles (
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT,
@@ -63,41 +63,41 @@ export const initDB = () => {
         is_synced INTEGER DEFAULT 1
       );
 
-      -- Mutation Queue (for offline actions)
+      -- Fila de Mutação (para ações offline)
       CREATE TABLE IF NOT EXISTS mutation_queue (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         table_name TEXT NOT NULL,
         action TEXT NOT NULL, -- INSERT, UPDATE, DELETE
-        data TEXT NOT NULL, -- JSON string of the row
+        data TEXT NOT NULL, -- String JSON da linha
         record_id TEXT NOT NULL,
         created_at TEXT DEFAULT (datetime('now'))
       );
 
-      -- Sync State (track last pull)
+      -- Estado de Sincronização (rastrear último pull)
       CREATE TABLE IF NOT EXISTS sync_state (
         table_name TEXT PRIMARY KEY NOT NULL,
         last_synced_at TEXT
       );
     `);
-        console.log('Banco de dados inicializado com sucesso');
-    } catch (error) {
-        console.error('Falha ao inicializar banco de dados:', error);
-    }
+    // Banco de dados inicializado com sucesso
+  } catch (error) {
+    // Falha ao inicializar banco de dados
+  }
 };
 
 export const getDB = () => db;
 
-// Type helpers
+// Auxiliares de Tipo
 export type MutationAction = 'INSERT' | 'UPDATE' | 'DELETE';
 
 export const queueMutation = async (
-    tableName: string,
-    action: MutationAction,
-    recordId: string,
-    data: any
+  tableName: string,
+  action: MutationAction,
+  recordId: string,
+  data: any
 ) => {
-    await db.runAsync(
-        'INSERT INTO mutation_queue (table_name, action, data, record_id) VALUES (?, ?, ?, ?)',
-        [tableName, action, JSON.stringify(data), recordId]
-    );
+  await db.runAsync(
+    'INSERT INTO mutation_queue (table_name, action, data, record_id) VALUES (?, ?, ?, ?)',
+    [tableName, action, JSON.stringify(data), recordId]
+  );
 };

@@ -89,7 +89,7 @@ const MainTabs = () => {
   );
 };
 
-// Main Navigator with Conditional Logic
+// Navegador Principal com Lógica Condicional
 const MainNavigator = () => {
   const { session, loading } = useAuth();
   const colorScheme = useColorScheme();

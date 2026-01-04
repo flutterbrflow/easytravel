@@ -10,7 +10,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({ startDate, endDate, onS
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Sunday
+    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Domingo
 
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
@@ -29,7 +29,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({ startDate, endDate, onS
     };
 
     const isSelected = (day: number) => {
-        // Construct YYYY-MM-DD manually to avoid timezone issues
+        // Construir YYYY-MM-DD manualmente para evitar problemas de fuso horário
         const year = currentDate.getFullYear();
         const month = String(currentDate.getMonth() + 1).padStart(2, '0');
         const dayStr = String(day).padStart(2, '0');
@@ -39,9 +39,9 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({ startDate, endDate, onS
 
     const isInRange = (day: number) => {
         if (!startDate || !endDate) return false;
-        // For comparison, standard string comparison works for YYYY-MM-DD
-        // But to accept mixed formats or rely on Date objects safely:
-        // We construct local dates at 12:00 to avoid midnight boundary issues
+        // Para comparação, a comparação de string padrão funciona para YYYY-MM-DD
+        // Mas para aceitar formatos mistos ou confiar em objetos Date com segurança:
+        // Construímos strings de data locais para evitar problemas de fuso horário
         const currentStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         return currentStr > startDate && currentStr < endDate;
     };

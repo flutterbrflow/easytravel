@@ -21,7 +21,7 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [isConnected, setIsConnected] = useState<boolean | null>(true);
     const [isSyncing, setIsSyncing] = useState(false);
 
-    // Initialize DB on mount and initial Sync
+    // Inicializa BD na montagem e Sync inicial
     useEffect(() => {
         const init = async () => {
             try {
@@ -29,19 +29,19 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 // Tentativa de sync inicial se estiver online (não bloqueante)
                 const state = await NetInfo.fetch();
                 if (state.isConnected) {
-                    // Fire and forget - não aguarda para não bloquear
+                    // Dispara e esquece - não aguarda para não bloquear
                     performSync().catch(e => {
-                        console.log('Sync inicial falhou (ignorado):', e.message);
+                        // Sync inicial falhou (ignorado)
                     });
                 }
             } catch (e) {
-                console.error('Erro na inicialização do NetworkContext:', e);
+                // Erro na inicialização do NetworkContext
             }
         };
         init();
     }, []);
 
-    // Monitor Network
+    // Monitorar Rede
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             const wasOffline = isConnected === false;
@@ -49,7 +49,7 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
             setIsConnected(!!state.isConnected);
 
-            // Auto-sync when coming back online
+            // Auto-sync ao voltar a ficar online
             if (wasOffline && nowOnline) {
                 performSync();
             }
@@ -61,18 +61,18 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const performSync = async () => {
         if (isSyncing) return;
 
-        // Force check connectivity before syncing
+        // Forçar verificação de conectividade antes de sincronizar
         const online = await checkConnectivity();
         if (!online) return;
 
         setIsSyncing(true);
         try {
-            // 1. Push local changes
+            // 1. Enviar alterações locais
             await SyncService.push();
-            // 2. Pull remote changes
+            // 2. Buscar alterações remotas
             await SyncService.pull();
         } catch (error) {
-            console.error('Falha na sincronização:', error);
+            // Falha na sincronização
         } finally {
             setIsSyncing(false);
         }

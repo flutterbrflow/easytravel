@@ -8,21 +8,21 @@ const WelcomeScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-background-dark min-h-[100dvh]">
-      {/* Main Content Area */}
+      {/* Área de Conteúdo Principal */}
       <div className="flex flex-col flex-grow">
-        {/* Hero Section */}
+        {/* Seção Hero */}
         <div className="w-full px-4 pt-4 pb-2">
           <div className="relative w-full aspect-[3/4] group flex items-center justify-center">
             <div
               className="absolute inset-0 bg-center bg-contain bg-no-repeat transition-transform duration-700 hover:scale-105"
               style={{ backgroundImage: `url("${IMAGES.welcomeHero}")` }}
             ></div>
-            {/* Gradient Overlay */}
+            {/* Sobreposição de Gradiente */}
             {/* Gradient Overlay Removed */}
           </div>
         </div>
 
-        {/* Text Content */}
+        {/* Conteúdo de Texto */}
         <div className="flex flex-col items-center px-6 pt-6 text-center">
           <h1 className="text-[#111418] dark:text-white tracking-tight text-3xl font-extrabold leading-tight mb-3">
             Explore o Mundo <br /> sem Estresse
@@ -31,7 +31,7 @@ const WelcomeScreen: React.FC = () => {
             Organize roteiros, controle gastos e guarde memórias incríveis em um só lugar.
           </p>
 
-          {/* Feature Icons */}
+          {/* Ícones de Funcionalidades */}
           <div className="flex items-center justify-center gap-6 mt-6 opacity-80">
             <div className="flex flex-col items-center gap-1 text-[#111418] dark:text-white">
               <span className="material-symbols-outlined text-primary text-2xl">map</span>
@@ -49,16 +49,16 @@ const WelcomeScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer Actions */}
+      {/* Ações do Rodapé */}
       <div className="flex flex-col w-full px-4 pt-6 pb-8 bg-white dark:bg-background-dark">
-        {/* Indicators */}
+        {/* Indicadores */}
         <div className="flex w-full flex-row items-center justify-center gap-2 mb-6">
           <div className="h-2 w-6 rounded-full bg-primary transition-all"></div>
           <div className="h-2 w-2 rounded-full bg-[#dbe0e6] dark:bg-[#3e4a56]"></div>
           <div className="h-2 w-2 rounded-full bg-[#dbe0e6] dark:bg-[#3e4a56]"></div>
         </div>
 
-        {/* Action Button */}
+        {/* Botão de Ação */}
         <div className="flex justify-center w-full mb-4">
           <button
             onClick={() => navigate(AppRoute.LOGIN)}

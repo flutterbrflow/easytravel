@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api, TripRow, ExpenseRow, MemoryRow, ExpenseInsert } from '../services/api';
 import ExpenseModal from './ExpenseModal';
 import BudgetTab from './BudgetTab'; // Dashboard Component
+import MemoriesTab from './MemoriesTab';
 import { AppRoute } from '../types';
 import { IMAGES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,12 +27,12 @@ const TripDetailScreen: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'budget' | 'memories'>('overview');
 
-    // Data State
+    // Estado dos Dados
     const [trip, setTrip] = useState<TripRow | null>(null);
     const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
     const [memories, setMemories] = useState<MemoryRow[]>([]);
 
-    // Edit State
+    // Estado de Edição
     const [editDestination, setEditDestination] = useState('');
     const [editDescription, setEditDescription] = useState('');
     const [editStartDate, setEditStartDate] = useState<string | null>(null);
@@ -39,7 +40,7 @@ const TripDetailScreen: React.FC = () => {
     const [editCoverImage, setEditCoverImage] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
 
-    // Expenses State
+    // Estado das Despesas
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [editingExpense, setEditingExpense] = useState<ExpenseRow | null>(null);
     const [newImageFile, setNewImageFile] = useState<File | null>(null);
@@ -63,7 +64,7 @@ const TripDetailScreen: React.FC = () => {
             setExpenses(expensesData || []);
             setMemories(memoriesData || []);
 
-            // Init Edit State
+            // Inicializar Estado de Edição
             if (tripData) {
                 setEditDestination(tripData.destination);
                 setEditDescription(tripData.description || '');
@@ -72,9 +73,18 @@ const TripDetailScreen: React.FC = () => {
                 setEditCoverImage(tripData.image_url);
             }
         } catch (error) {
-            console.error('Error loading trip details:', error);
+            // Erro ao carregar detalhes da viagem
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadMemoriesOnly = async (tripId: string) => {
+        try {
+            const memoriesData = await api.memories.list(tripId);
+            setMemories(memoriesData || []);
+        } catch (error) {
+            // Erro ao atualizar memórias
         }
     };
 
@@ -120,7 +130,7 @@ const TripDetailScreen: React.FC = () => {
                 });
 
                 if (uploadError) {
-                    console.error('Error uploading image:', uploadError);
+                    // Erro ao enviar imagem
                 } else {
                     const { data: { publicUrl } } = api.storage.getPublicUrl('trip-images', filePath);
                     imageUrl = publicUrl;
@@ -138,7 +148,6 @@ const TripDetailScreen: React.FC = () => {
             await loadData(trip.id);
             alert('Viagem atualizada com sucesso!');
         } catch (error: any) {
-            console.error('Error updating trip:', error);
             alert('Erro ao atualizar: ' + error.message);
         } finally {
             setSaving(false);
@@ -162,21 +171,20 @@ const TripDetailScreen: React.FC = () => {
 
         try {
             if (editingExpense) {
-                // Update
+                // Atualizar
                 await api.expenses.update(editingExpense.id, expenseData);
             } else {
-                // Create
+                // Criar
                 await api.expenses.create({
                     ...expenseData,
                     trip_id: trip.id,
                     user_id: user.id,
                 } as ExpenseInsert);
             }
-            // Reload expenses list
+            // Recarregar lista de despesas
             const updatedExpenses = await api.expenses.list(trip.id);
             setExpenses(updatedExpenses || []);
         } catch (error) {
-            console.error('Error saving expense:', error);
             throw error;
         }
     };
@@ -188,7 +196,6 @@ const TripDetailScreen: React.FC = () => {
             await api.expenses.delete(id);
             setExpenses(prev => prev.filter(e => e.id !== id));
         } catch (error) {
-            console.error('Error deleting expense:', error);
             alert('Erro ao excluir despesa.');
         }
     };
@@ -268,7 +275,7 @@ const TripDetailScreen: React.FC = () => {
                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                         }`}
                 >
-                    Memórias
+                    Memórias ({memories.length})
                     {activeTab === 'memories' && (
                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
                     )}
@@ -331,7 +338,7 @@ const TripDetailScreen: React.FC = () => {
                                     Limpar
                                 </button>
                             </div>
-                            {/* Selected Dates Summary */}
+                            {/* Resumo das Datas Selecionadas */}
                             <div className="flex gap-4">
                                 <div className="flex-1 p-3 bg-white dark:bg-[#1e2a36] rounded-xl border border-gray-100 dark:border-gray-800">
                                     <span className="block text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Ida</span>
@@ -372,7 +379,7 @@ const TripDetailScreen: React.FC = () => {
                             </div>
 
                             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                                {/* Owner */}
+                                {/* Proprietário */}
                                 <div className="flex flex-col items-center flex-shrink-0">
                                     <div className="relative">
                                         <img
@@ -385,7 +392,7 @@ const TripDetailScreen: React.FC = () => {
                                     <span className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-2">Você</span>
                                 </div>
 
-                                {/* Mock Friends */}
+                                {/* Amigos (Mock) */}
                                 <div className="flex flex-col items-center flex-shrink-0">
                                     <img src={IMAGES.friend1} alt="André" className="w-14 h-14 rounded-full border-2 border-white dark:border-gray-700 object-cover" />
                                     <span className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-2">André</span>
@@ -395,7 +402,7 @@ const TripDetailScreen: React.FC = () => {
                                     <span className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-2">Sofia</span>
                                 </div>
 
-                                {/* Add Button */}
+                                {/* Botão Adicionar */}
                                 <button className="flex flex-col items-center flex-shrink-0 group" onClick={() => alert('Em breve')}>
                                     <div className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center group-hover:border-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-all">
                                         <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,27 +456,12 @@ const TripDetailScreen: React.FC = () => {
                     />
                 )}
 
-                {activeTab === 'memories' && (
-                    <div className="space-y-6">
-                        <div className="text-center py-10 text-gray-400 dark:text-gray-500">
-                            <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p>Galeria de Memórias</p>
-                            <p className="text-sm mt-1 mb-4">(Em Breve)</p>
-
-                            {/* Temporary list of captions just to show data integration if any */}
-                            {memories.length > 0 && (
-                                <div className="text-left space-y-2">
-                                    {memories.map(m => (
-                                        <div key={m.id} className="p-2 bg-gray-100 dark:bg-gray-800 rounded">
-                                            {m.caption}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                {activeTab === 'memories' && trip && (
+                    <MemoriesTab // Renderizar Aba de Memórias
+                        tripId={trip.id}
+                        memories={memories}
+                        onRefresh={() => loadMemoriesOnly(trip.id)}
+                    />
                 )}
             </div>
 

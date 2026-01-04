@@ -102,7 +102,7 @@ const ProfileScreen: React.FC = () => {
         }, [])
     );
 
-    // Initialize editName when user loads
+    // Inicializar nome de edição quando usuário carrega
     useEffect(() => {
         if (user) {
             setEditName(user.user_metadata?.full_name || user.user_metadata?.display_name || '');
@@ -121,7 +121,7 @@ const ProfileScreen: React.FC = () => {
             });
 
             if (user?.id) {
-                // Try Local DB First
+                // Tenta DB Local Primeiro
                 try {
                     const profile = await db.getFirstAsync<any>(
                         'SELECT * FROM profiles WHERE id = ?',
@@ -132,14 +132,14 @@ const ProfileScreen: React.FC = () => {
                         setProfileData(profile);
                         setEditName(profile.name || user.user_metadata?.full_name || '');
                     } else {
-                        // Fallback/Sync check if needed
+                        // Fallback/Verificação de sincronização se necessário
                     }
                 } catch (e) {
-                    console.log('Erro ao ler perfil local:', e);
+                    // Erro ao ler perfil local
                 }
             }
         } catch (error) {
-            console.error('Erro ao carregar estatísticas:', error);
+            // Erro ao carregar estatísticas
         } finally {
             setLoadingStats(false);
         }
@@ -156,28 +156,27 @@ const ProfileScreen: React.FC = () => {
             const now = new Date().toISOString();
 
             if (user?.id) {
-                // Update Local & Queue Sync (Offline First)
+                // Atualizar Local e Fila de Sincronização (Offline First)
                 await api.profiles.update(user.id, {
                     name: editName.trim(),
                     updated_at: now
                 });
 
-                // Update Auth User Metadata (Best effort if online)
+                // Atualizar Metadados do Usuário Auth (Melhor esforço se online)
                 try {
                     await supabase.auth.updateUser({
                         data: { full_name: editName.trim() }
                     });
                 } catch (e) {
-                    console.log('Update auth metadata failed (offline?), ignoring:', e);
+                    // Atualização de metadados de autenticação falhou (offline?), ignorando
                 }
 
-                // Update local state
+                // Atualizar estado local
                 setProfileData({ ...profileData, name: editName.trim(), updated_at: now });
                 setIsEditModalVisible(false);
                 Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
             }
         } catch (error) {
-            console.error('Erro ao atualizar perfil:', error);
             Alert.alert('Erro', 'Falha ao atualizar perfil.');
         } finally {
             setSavingProfile(false);
@@ -231,7 +230,6 @@ const ProfileScreen: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.error('Erro ao selecionar imagem de perfil:', error);
             Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
         }
     };
@@ -252,7 +250,6 @@ const ProfileScreen: React.FC = () => {
                 setProfileData((prev: any) => ({ ...prev, avatar_url: uri, updated_at: now }));
             }
         } catch (error) {
-            console.error('Erro ao salvar avatar:', error);
             Alert.alert('Erro', 'Falha ao salvar foto de perfil.');
         } finally {
             setUploading(false);
@@ -284,11 +281,11 @@ const ProfileScreen: React.FC = () => {
         );
     };
 
-    // Determine Avatar & Name to Display
+    // Determinar Avatar e Nome para Exibir
     const avatarUrl = profileData?.avatar_url || user?.user_metadata?.avatar_url;
     const finalAvatarUrl = avatarUrl || IMAGES.userAvatar;
 
-    // Display Name Logic: Profile Name -> Meta Full Name -> Meta Display Name -> Default
+    // Lógica de Exibição de Nome: Nome do Perfil -> Nome Completo Meta -> Nome de Exibição Meta -> Padrão
     const displayName = profileData?.name || user?.user_metadata?.full_name || user?.user_metadata?.display_name || 'Viajante';
 
     const [imageError, setImageError] = useState(false);

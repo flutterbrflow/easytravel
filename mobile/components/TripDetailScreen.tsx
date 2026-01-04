@@ -24,7 +24,7 @@ import * as Contacts from 'expo-contacts';
 import * as FileSystem from 'expo-file-system';
 
 import { RootStackParamList } from '../types';
-import { api, TripRow, ExpenseRow, MemoryRow, ExpenseInsert } from '../services/api'; // Assuming ExpenseInsert is exported
+import { api, TripRow, ExpenseRow, MemoryRow, ExpenseInsert, MemoryInsert } from '../services/api';
 import ExpenseModal from './ExpenseModal'; // Import Modal
 import BudgetTab from './BudgetTab'; // Import new Budget Tab
 import { COLORS, IMAGES } from '../constants';
@@ -32,6 +32,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNetwork } from '../contexts/NetworkContext';
 import { supabase } from '../lib/supabase';
 import { CachedImage } from './CachedImage';
+import { MemoriesTab } from './MemoriesTab';
 
 const { width } = Dimensions.get('window');
 
@@ -182,6 +183,8 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
         try {
             if (isRefresh) {
                 setRefreshing(true);
+                // Tenta sincronizar se estiver online para puxar novas memórias
+                await api.memories.sync();
             } else {
                 setLoading(true);
             }
@@ -196,7 +199,7 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
             setExpenses(expensesData || []);
             setMemories(memoriesData || []);
 
-            // Initialize Edit State
+            // Inicializar Estado de Edição
             if (tripData) {
                 setEditDestination(tripData.destination);
                 setEditDescription(tripData.description || '');
@@ -205,7 +208,7 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                 setEditCoverImage(tripData.image_url);
             }
         } catch (error) {
-            console.error('Erro ao carregar detalhes da viagem:', error);
+            // Erro ao carregar detalhes da viagem
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -298,21 +301,18 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                             });
 
                         if (uploadError) {
-                            console.error('Erro no envio:', uploadError);
-                            // Manter file:// path para sync posterior
+                            // Erro no envio, manter file:// path para sync posterior
                             imageUrl = editCoverImage;
                         } else {
                             const { data } = supabase.storage.from('trip-images').getPublicUrl(filePath);
                             imageUrl = data.publicUrl;
                         }
                     } catch (e) {
-                        console.error('Erro no processamento da imagem:', e);
                         // Manter file:// path para sync posterior
                         imageUrl = editCoverImage;
                     }
                 } else {
                     // Offline: usar caminho local, será feito upload na sync
-                    console.log('[Edit] Offline - imagem será enviada na sincronização');
                     imageUrl = editCoverImage;
                 }
             }
@@ -366,11 +366,10 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                     user_id: user.id,
                 } as ExpenseInsert);
             }
-            // Reload
+            // Recarregar
             const updatedExpenses = await api.expenses.list(trip.id);
             setExpenses(updatedExpenses || []);
         } catch (error) {
-            console.error('Erro ao salvar despesa:', error);
             Alert.alert('Erro', 'Falha ao salvar despesa');
         }
     };
@@ -389,13 +388,31 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                             await api.expenses.delete(id);
                             setExpenses(prev => prev.filter(e => e.id !== id));
                         } catch (error) {
-                            console.error('Erro ao excluir despesa:', error);
                             Alert.alert('Erro', 'Falha ao excluir despesa');
                         }
                     }
                 }
             ]
         );
+    };
+
+    // Memory Handlers
+    const handleAddMemory = async (memoryData: Omit<MemoryInsert, 'id' | 'created_at' | 'updated_at'>) => {
+        try {
+            const newMemory = await api.memories.create(memoryData as MemoryInsert);
+            setMemories(prev => [newMemory, ...prev]);
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const handleDeleteMemory = async (id: string) => {
+        try {
+            await api.memories.delete(id);
+            setMemories(prev => prev.filter(m => m.id !== id));
+        } catch (error) {
+            throw error;
+        }
     };
 
     const formatHeaderDate = (start: string | null, end: string | null) => {
@@ -462,180 +479,191 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                     style={[styles.tab, activeTab === 'memories' && styles.activeTab]}
                     onPress={() => setActiveTab('memories')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'memories' && styles.activeTabText]}>Memórias</Text>
+                    <Text style={[styles.tabText, activeTab === 'memories' && styles.activeTabText]}>Memórias ({memories.length})</Text>
                 </TouchableOpacity>
             </View>
 
-            <ScrollView
-                style={styles.content}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} tintColor={COLORS.primary} />
-                }
-            >
-                {activeTab === 'overview' && (
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={{ flex: 1 }}
-                        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-                    >
-                        <View style={styles.overviewContainer}>
-
-                            {/* Destino */}
-                            <View style={styles.section}>
-                                <Text style={styles.label}>Para onde você vai?</Text>
-                                <View style={styles.inputContainer}>
-                                    <Ionicons name="location-outline" size={20} color="#666" style={styles.inputIcon} />
-                                    <TextInput
-                                        style={styles.input}
-                                        value={editDestination}
-                                        onChangeText={setEditDestination}
-                                        placeholder="Ex: Paris, França"
-                                        placeholderTextColor="#999"
-                                    />
-                                </View>
-                            </View>
-
-                            {/* Imagem de Capa */}
-                            <View style={styles.section}>
-                                <Text style={styles.label}>Imagem de Capa</Text>
-                                <TouchableOpacity style={styles.coverImageContainer} onPress={pickImage}>
-                                    {editCoverImage ? (
-                                        <CachedImage uri={editCoverImage} style={styles.coverImage} />
-                                    ) : trip?.image_url ? (
-                                        <CachedImage uri={trip.image_url} style={styles.coverImage} />
-                                    ) : (
-                                        <View style={styles.coverImagePlaceholder}>
-                                            <Ionicons name="image-outline" size={40} color="#ccc" />
-                                            <Text style={{ color: '#ccc', marginTop: 8 }}>Toque para alterar</Text>
-                                        </View>
-                                    )}
-                                    <View style={styles.editImageOverlay}>
-                                        <Ionicons name="camera" size={20} color="#fff" />
-                                    </View>
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* Datas */}
-                            <View style={styles.section}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                    <Text style={[styles.label, { marginBottom: 0 }]}>Quando?</Text>
-                                    <TouchableOpacity onPress={() => { setEditStartDate(null); setEditEndDate(null); }}>
-                                        <Text style={{ color: '#2563eb', fontWeight: '600', fontSize: 14 }}>Limpar</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                <View style={styles.dateDisplayRow}>
-                                    <View style={styles.dateDisplayBox}>
-                                        <Text style={styles.dateDisplayLabel}>IDA</Text>
-                                        <Text style={styles.dateDisplayValue}>
-                                            {formatDateDisplay(editStartDate)}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.dateDisplayBox}>
-                                        <Text style={styles.dateDisplayLabel}>VOLTA</Text>
-                                        <Text style={styles.dateDisplayValue}>
-                                            {formatDateDisplay(editEndDate)}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <CustomCalendar
-                                    startDate={editStartDate || ''}
-                                    endDate={editEndDate || ''}
-                                    onSelectDate={(date) => {
-                                        // Logic to handle range selection (same as NewTripScreen)
-                                        if (!editStartDate || (editStartDate && editEndDate)) {
-                                            setEditStartDate(date);
-                                            setEditEndDate('');
-                                        } else {
-                                            if (date < editStartDate) {
-                                                setEditEndDate(editStartDate);
-                                                setEditStartDate(date);
-                                            } else {
-                                                setEditEndDate(date);
-                                            }
-                                        }
-                                    }}
-                                    isDark={isDark}
-                                />
-                            </View>
-
-                            {/* Seção de Participantes */}
-                            <View style={styles.section}>
-                                <View style={styles.sectionHeader}>
-                                    <Text style={styles.labelBig}>Quem vai com você?</Text>
-                                    <TouchableOpacity style={styles.inviteButton} onPress={() => Alert.alert('Convite', 'Link copiado!')}>
-                                        <Ionicons name="share-social-outline" size={16} color={COLORS.primary} />
-                                        <Text style={styles.inviteText}>Convidar</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.participantsScroll}>
-                                    <Participant
-                                        avatar={user?.user_metadata?.avatar_url || 'https://i.pravatar.cc/150?u=me'}
-                                        name="Você"
-                                        isUser
-                                    />
-                                    {/* Mock Friends */}
-                                    <Participant avatar="https://i.pravatar.cc/150?u=1" name="André" />
-                                    <Participant avatar="https://i.pravatar.cc/150?u=2" name="Sofia" />
-
-                                    <TouchableOpacity style={styles.addParticipant} onPress={() => Alert.alert('Adicionar', 'Funcionalidade em breve')}>
-                                        <View style={styles.addParticipantCircle}>
-                                            <Ionicons name="add" size={24} color="#666" />
-                                        </View>
-                                        <Text style={styles.addParticipantText}>Adicionar</Text>
-                                    </TouchableOpacity>
-                                </ScrollView>
-                            </View>
-
-                            {/* Descrição */}
-                            <View style={styles.section}>
-                                <Text style={styles.label}>Notas ou Descrição</Text>
-                                <View style={styles.textAreaContainer}>
-                                    <TextInput
-                                        style={styles.textArea}
-                                        value={editDescription}
-                                        onChangeText={setEditDescription}
-                                        placeholder="Sobre a viagem..."
-                                        placeholderTextColor="#999"
-                                        multiline
-                                        textAlignVertical="top"
-                                    />
-                                </View>
-                            </View>
-
-                            {/* Save Button */}
-                            <TouchableOpacity
-                                style={[styles.saveButtonMain, saving && { opacity: 0.7 }]}
-                                onPress={handleSaveOverview}
-                                disabled={saving}
-                            >
-                                {saving ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <Text style={styles.saveButtonText}>Salvar Alterações</Text>
-                                )}
-                            </TouchableOpacity>
-
-                            <View style={{ height: 40 }} />
-                        </View>
-                    </KeyboardAvoidingView>
-                )}
-
-                {activeTab === 'budget' && (
-                    <BudgetTab
-                        expenses={expenses}
-                        trip={trip}
-                        onAddExpense={handleOpenAddExpense}
-                        onEditExpense={handleEditExpense}
-                        onDeleteExpense={handleDeleteExpense}
+            {/* Conditional ScrollView - avoid nesting with FlatList in Memories */}
+            {activeTab === 'memories' ? (
+                // Memories tab has its own FlatList, render directly
+                trip && user && (
+                    <MemoriesTab
+                        memories={memories}
+                        tripId={trip.id}
+                        userId={user.id}
+                        onAddMemory={handleAddMemory}
+                        onDeleteMemory={handleDeleteMemory}
                         onRefresh={() => loadData(true)}
+                        isDark={isDark}
                     />
-                )}
-                {activeTab === 'memories' && (
-                    <View style={styles.sectionContainer}>
-                        <Text>Memories Mock</Text>
-                    </View>
-                )}
-            </ScrollView>
+                )
+            ) : (
+                <ScrollView
+                    style={styles.content}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} tintColor={COLORS.primary} />
+                    }
+                >
+                    {activeTab === 'overview' && (
+                        <KeyboardAvoidingView
+                            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                            style={{ flex: 1 }}
+                            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                        >
+                            <View style={styles.overviewContainer}>
+
+                                {/* Destino */}
+                                <View style={styles.section}>
+                                    <Text style={styles.label}>Para onde você vai?</Text>
+                                    <View style={styles.inputContainer}>
+                                        <Ionicons name="location-outline" size={20} color="#666" style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            value={editDestination}
+                                            onChangeText={setEditDestination}
+                                            placeholder="Ex: Paris, França"
+                                            placeholderTextColor="#999"
+                                        />
+                                    </View>
+                                </View>
+
+                                {/* Imagem de Capa */}
+                                <View style={styles.section}>
+                                    <Text style={styles.label}>Imagem de Capa</Text>
+                                    <TouchableOpacity style={styles.coverImageContainer} onPress={pickImage}>
+                                        {editCoverImage ? (
+                                            <CachedImage uri={editCoverImage} style={styles.coverImage} />
+                                        ) : trip?.image_url ? (
+                                            <CachedImage uri={trip.image_url} style={styles.coverImage} />
+                                        ) : (
+                                            <View style={styles.coverImagePlaceholder}>
+                                                <Ionicons name="image-outline" size={40} color="#ccc" />
+                                                <Text style={{ color: '#ccc', marginTop: 8 }}>Toque para alterar</Text>
+                                            </View>
+                                        )}
+                                        <View style={styles.editImageOverlay}>
+                                            <Ionicons name="camera" size={20} color="#fff" />
+                                        </View>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Datas */}
+                                <View style={styles.section}>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                        <Text style={[styles.label, { marginBottom: 0 }]}>Quando?</Text>
+                                        <TouchableOpacity onPress={() => { setEditStartDate(null); setEditEndDate(null); }}>
+                                            <Text style={{ color: '#2563eb', fontWeight: '600', fontSize: 14 }}>Limpar</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={styles.dateDisplayRow}>
+                                        <View style={styles.dateDisplayBox}>
+                                            <Text style={styles.dateDisplayLabel}>IDA</Text>
+                                            <Text style={styles.dateDisplayValue}>
+                                                {formatDateDisplay(editStartDate)}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.dateDisplayBox}>
+                                            <Text style={styles.dateDisplayLabel}>VOLTA</Text>
+                                            <Text style={styles.dateDisplayValue}>
+                                                {formatDateDisplay(editEndDate)}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <CustomCalendar
+                                        startDate={editStartDate || ''}
+                                        endDate={editEndDate || ''}
+                                        onSelectDate={(date) => {
+                                            // Logic to handle range selection (same as NewTripScreen)
+                                            if (!editStartDate || (editStartDate && editEndDate)) {
+                                                setEditStartDate(date);
+                                                setEditEndDate('');
+                                            } else {
+                                                if (date < editStartDate) {
+                                                    setEditEndDate(editStartDate);
+                                                    setEditStartDate(date);
+                                                } else {
+                                                    setEditEndDate(date);
+                                                }
+                                            }
+                                        }}
+                                        isDark={isDark}
+                                    />
+                                </View>
+
+                                {/* Seção de Participantes */}
+                                <View style={styles.section}>
+                                    <View style={styles.sectionHeader}>
+                                        <Text style={styles.labelBig}>Quem vai com você?</Text>
+                                        <TouchableOpacity style={styles.inviteButton} onPress={() => Alert.alert('Convite', 'Link copiado!')}>
+                                            <Ionicons name="share-social-outline" size={16} color={COLORS.primary} />
+                                            <Text style={styles.inviteText}>Convidar</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.participantsScroll}>
+                                        <Participant
+                                            avatar={user?.user_metadata?.avatar_url || 'https://i.pravatar.cc/150?u=me'}
+                                            name="Você"
+                                            isUser
+                                        />
+                                        {/* Mock Friends */}
+                                        <Participant avatar="https://i.pravatar.cc/150?u=1" name="André" />
+                                        <Participant avatar="https://i.pravatar.cc/150?u=2" name="Sofia" />
+
+                                        <TouchableOpacity style={styles.addParticipant} onPress={() => Alert.alert('Adicionar', 'Funcionalidade em breve')}>
+                                            <View style={styles.addParticipantCircle}>
+                                                <Ionicons name="add" size={24} color="#666" />
+                                            </View>
+                                            <Text style={styles.addParticipantText}>Adicionar</Text>
+                                        </TouchableOpacity>
+                                    </ScrollView>
+                                </View>
+
+                                {/* Descrição */}
+                                <View style={styles.section}>
+                                    <Text style={styles.label}>Notas ou Descrição</Text>
+                                    <View style={styles.textAreaContainer}>
+                                        <TextInput
+                                            style={styles.textArea}
+                                            value={editDescription}
+                                            onChangeText={setEditDescription}
+                                            placeholder="Sobre a viagem..."
+                                            placeholderTextColor="#999"
+                                            multiline
+                                            textAlignVertical="top"
+                                        />
+                                    </View>
+                                </View>
+
+                                {/* Save Button */}
+                                <TouchableOpacity
+                                    style={[styles.saveButtonMain, saving && { opacity: 0.7 }]}
+                                    onPress={handleSaveOverview}
+                                    disabled={saving}
+                                >
+                                    {saving ? (
+                                        <ActivityIndicator color="#fff" />
+                                    ) : (
+                                        <Text style={styles.saveButtonText}>Salvar Alterações</Text>
+                                    )}
+                                </TouchableOpacity>
+
+                                <View style={{ height: 40 }} />
+                            </View>
+                        </KeyboardAvoidingView>
+                    )}
+
+                    {activeTab === 'budget' && (
+                        <BudgetTab
+                            expenses={expenses}
+                            trip={trip}
+                            onAddExpense={handleOpenAddExpense}
+                            onEditExpense={handleEditExpense}
+                            onDeleteExpense={handleDeleteExpense}
+                            onRefresh={() => loadData(true)}
+                        />
+                    )}
+                </ScrollView>
+            )}
 
             {trip && user && (
                 <ExpenseModal

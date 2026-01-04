@@ -69,7 +69,7 @@ const LoginScreen = () => {
                     }
                     throw error;
                 }
-                // Navigation is handled automatically by App.tsx based on session state
+                // A navegação é controlada automaticamente pelo App.tsx com base no estado da sessão
             }
         } catch (err: any) {
             Alert.alert('Erro', err.message);
@@ -178,9 +178,9 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        height: '55%', // Occupy top half roughly
+        height: '55%', // Ocupar aproximadamente metade superior
         alignItems: 'center',
-        justifyContent: 'flex-start', // Align start so padding top can be added if needed
+        justifyContent: 'flex-start', // Alinhar ao início para que padding top possa ser adicionado se necessário
         paddingTop: 40,
     },
     heroImage: {
