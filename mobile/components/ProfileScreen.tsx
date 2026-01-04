@@ -19,11 +19,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ExpoFileSystem from 'expo-file-system';
 
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS, IMAGES } from '../constants';
 import { api } from '../services/api';
+
 import { supabase } from '../lib/supabase';
+import { getDB } from '../services/localDb';
+import { SyncService } from '../services/syncService';
+import { CachedImage } from './CachedImage';
+
+const db = getDB();
 
 const StatCard = ({ icon, value, label }: { icon: any, value: number | string, label: string }) => {
     const colorScheme = useColorScheme();
@@ -114,15 +121,21 @@ const ProfileScreen: React.FC = () => {
             });
 
             if (user?.id) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
+                // Try Local DB First
+                try {
+                    const profile = await db.getFirstAsync<any>(
+                        'SELECT * FROM profiles WHERE id = ?',
+                        [user.id]
+                    );
 
-                if (profile) {
-                    setProfileData(profile);
-                    setEditName(profile.name || user.user_metadata?.full_name || '');
+                    if (profile) {
+                        setProfileData(profile);
+                        setEditName(profile.name || user.user_metadata?.full_name || '');
+                    } else {
+                        // Fallback/Sync check if needed
+                    }
+                } catch (e) {
+                    console.log('Erro ao ler perfil local:', e);
                 }
             }
         } catch (error) {
@@ -143,23 +156,20 @@ const ProfileScreen: React.FC = () => {
             const now = new Date().toISOString();
 
             if (user?.id) {
-                // Update Profile Table
-                const { error: updateError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                        id: user.id,
-                        name: editName.trim(),
-                        updated_at: now,
-                    });
-
-                if (updateError) throw updateError;
-
-                // Update Auth User Metadata
-                const { error: authError } = await supabase.auth.updateUser({
-                    data: { full_name: editName.trim() }
+                // Update Local & Queue Sync (Offline First)
+                await api.profiles.update(user.id, {
+                    name: editName.trim(),
+                    updated_at: now
                 });
 
-                if (authError) throw authError;
+                // Update Auth User Metadata (Best effort if online)
+                try {
+                    await supabase.auth.updateUser({
+                        data: { full_name: editName.trim() }
+                    });
+                } catch (e) {
+                    console.log('Update auth metadata failed (offline?), ignoring:', e);
+                }
 
                 // Update local state
                 setProfileData({ ...profileData, name: editName.trim(), updated_at: now });
@@ -206,7 +216,19 @@ const ProfileScreen: React.FC = () => {
             });
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
-                await uploadAvatar(result.assets[0].uri);
+                const asset = result.assets[0];
+
+                // 1. Mover para diretório permanente
+                const fileName = `avatar_${user?.id}_${Date.now()}.jpg`;
+                const docDir = (ExpoFileSystem as any).documentDirectory || (ExpoFileSystem as any).cacheDirectory;
+
+                if (docDir) {
+                    const newPath = docDir + fileName;
+                    await ExpoFileSystem.copyAsync({ from: asset.uri, to: newPath });
+                    await updateAvatar(newPath);
+                } else {
+                    await updateAvatar(asset.uri);
+                }
             }
         } catch (error) {
             console.error('Erro ao selecionar imagem de perfil:', error);
@@ -214,67 +236,67 @@ const ProfileScreen: React.FC = () => {
         }
     };
 
-    const uploadAvatar = async (uri: string) => {
+    const updateAvatar = async (uri: string) => {
         try {
             setUploading(true);
-            const response = await fetch(uri);
-            const arrayBuffer = await response.arrayBuffer();
-
-            const fileExt = uri.split('.').pop();
-            const fileName = `${user?.id || 'unknown'}/avatar.${fileExt}`;
-            const filePath = `${fileName}`;
-
-            const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, arrayBuffer, {
-                contentType: 'image/jpeg', // Force jpeg or detect from uri
-                upsert: true,
-            });
-
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+            const now = new Date().toISOString();
 
             if (user?.id) {
-                // Update Profile Table
-                const { error: updateError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                        id: user.id,
-                        avatar_url: publicUrl,
-                        updated_at: new Date().toISOString(),
-                    });
-
-                if (updateError) throw updateError;
-
-                // Update Auth User Metadata
-                const { error: authError } = await supabase.auth.updateUser({
-                    data: { avatar_url: publicUrl }
+                // Offline First: Salva caminho local e fila upload
+                // SyncService vai interceptar 'file://' no campo 'avatar_url' do profile e fazer upload
+                await api.profiles.update(user.id, {
+                    avatar_url: uri,
+                    updated_at: now
                 });
 
-                if (authError) throw authError;
-
-                // Update local state immediately
-                setProfileData((prev: any) => ({
-                    ...prev,
-                    avatar_url: publicUrl,
-                    updated_at: new Date().toISOString()
-                }));
+                setProfileData((prev: any) => ({ ...prev, avatar_url: uri, updated_at: now }));
             }
         } catch (error) {
-            console.error('Erro ao enviar avatar:', error);
-            Alert.alert('Erro', 'Falha ao atualizar foto de perfil.');
+            console.error('Erro ao salvar avatar:', error);
+            Alert.alert('Erro', 'Falha ao salvar foto de perfil.');
         } finally {
             setUploading(false);
         }
     };
 
+    const handleForceSync = async () => {
+        Alert.alert(
+            'Forçar Sincronização',
+            'Isso irá baixar todos os dados do servidor novamente. Útil se houver imagens faltando.',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Sincronizar',
+                    onPress: async () => {
+                        try {
+                            setUploading(true);
+                            await SyncService.resetSync();
+                            Alert.alert('Sucesso', 'Sincronização completa realizada!');
+                            loadData(); // Recarregar perfil
+                        } catch (e) {
+                            Alert.alert('Erro', 'Falha na sincronização.');
+                        } finally {
+                            setUploading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     // Determine Avatar & Name to Display
-    // Cache bust using updated_at
     const avatarUrl = profileData?.avatar_url || user?.user_metadata?.avatar_url;
-    const cacheBuster = profileData?.updated_at ? new Date(profileData.updated_at).getTime() : Date.now();
-    const finalAvatarUrl = avatarUrl ? `${avatarUrl}?t=${cacheBuster}` : IMAGES.userAvatar;
+    const finalAvatarUrl = avatarUrl || IMAGES.userAvatar;
 
     // Display Name Logic: Profile Name -> Meta Full Name -> Meta Display Name -> Default
     const displayName = profileData?.name || user?.user_metadata?.full_name || user?.user_metadata?.display_name || 'Viajante';
+
+    const [imageError, setImageError] = useState(false);
+
+    // Reset error when url changes
+    useEffect(() => {
+        setImageError(false);
+    }, [finalAvatarUrl]);
 
     return (
         <SafeAreaView
@@ -301,11 +323,10 @@ const ProfileScreen: React.FC = () => {
                 {/* User Info */}
                 <View style={styles.userInfoSection}>
                     <View style={styles.avatarContainer}>
-                        <Image
-                            source={{
-                                uri: finalAvatarUrl
-                            }}
+                        <CachedImage
+                            uri={finalAvatarUrl}
                             style={styles.avatar}
+                            placeholder={IMAGES.userAvatar}
                         />
                         <TouchableOpacity
                             style={styles.editAvatarButton}

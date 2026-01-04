@@ -224,13 +224,13 @@ O EasyTravel se adapta automaticamente ao tema do seu sistema:
 *Você pode adicionar fotos na aba "Memórias" (ícone de fotos) dentro de cada viagem.*
 
 ### ❓ Posso usar offline?
-*Atualmente o app requer conexão. Modo offline planejado para futuras versões.*
+*Sim! No aplicativo mobile, você pode criar viagens, adicionar gastos e memórias mesmo sem internet. Tudo será sincronizado automaticamente quando você se reconectar.*
 
 ### ❓ Como faço backup dos dados?
-*Sistema de sincronização na nuvem será implementado em breve.*
+*Seus dados são salvos automaticamente na nuvem (Supabase) sempre que houver conexão com a internet.*
 
 ### ❓ Posso compartilhar minha viagem?
-*Funcionalidade de compartilhamento em desenvolvimento.*
+*Funcionalidade de compartilhamento de link em desenvolvimento.*
 
 ---
 
@@ -246,11 +246,11 @@ O EasyTravel se adapta automaticamente ao tema do seu sistema:
 | ✅ Upload de Avatar | Implementado |
 | ✅ Controle de gastos | Implementado |
 | ✅ Filtros de tempo | Implementado |
-| ✅ Galeria de memórias | Implementado (Básico) |
+| ✅ Galeria de memórias | Implementado |
 | ✅ Editar viagem | Implementado |
 | ✅ Excluir viagem | Implementado |
 | ✅ Autenticação | Implementado |
-| 🚧 Sincronização | Planejado |
+| ✅ Sincronização | **Implementado (Mobile Offline-First)** |
 
 **Legenda:**
 - ✅ Disponível

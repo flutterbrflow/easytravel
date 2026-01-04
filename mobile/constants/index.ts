@@ -15,7 +15,7 @@ export const COLORS = {
 export const IMAGES = {
     welcomeHero: require('../assets/welcome-hero.png'),
     loginBackground: require('../assets/login-background.png'),
-    userAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBvI7c0V-mKXB3NfgfzEDo_q-luiPIaCld-022dWqtGFmwQwZIun0GPlEs4l9UjMJvY2sx3JYRw-x5ax-HB6eZKhypHWyNikF6wkoGhvjLyGcgfzY330CDpIWYJ0GBflNf2C8jev0sKbtRH-Z6OYWGiK0Qcf54kvd7oekXgxcVU3jC4NkZFnFMhSyR6zy81WDlW8tUAmHQE8OXC5_gflXyISBtDB6PRPeE4l9VUGJinOR4j-mDLpSC8aBj82MarPElbS0Ey71FrvH2V",
+    userAvatar: require('../assets/icon.png'),
     friend1: "https://lh3.googleusercontent.com/aida-public/AB6AXuBTJjFjX96vfTQnd9-TH2VDCDkObS1CWTZ7QjjPYvtmNveUR2Mqf7i8BSic2uf-MbcMVBxGAGLdU7jW7af_fgIabqcsWKftjmXakI8P9TspjpRPFu_ZaKKEObJg6n0gdHP4wPppHwj3IOL3h4wpS9CnH51rX_rH0hZqZtw8Kd2ndf1iJ66piJN4Npu5YrcJXM5_DklOMpI0VeEtPxC_q_9typYhMs3l4bQDMDSpDZ6Xy5g6czLYJbyXqJKRnc6QoWKCW5hv4sIgkY52",
     friend2: "https://lh3.googleusercontent.com/aida-public/AB6AXuDjUXuHjIK03cNnJ4dWixkD5l6mu26CJnFPzPs48cCGxBS51qEN9F-tulSlRyabnRl-nb05oFB1cE51YjfOCDQ57E_90VUIBXdQu8Lw3iaaKCZipyCuemLSl9g2Co0AHB7GM1a5T7mPQf4lAYpBIEtvhZWZOsUzLJo1-dxnMWfoGrF4gD2HX7Am8MMgQJS4Uruow6-l3oNevXGZn8T0rTK5QJKo27Edj70HatQbYs-gZHaBLVXFYDOWXKhLAvCBXqA1jhgCNyOF6PAf",
     paris: "https://lh3.googleusercontent.com/aida-public/AB6AXuDBzpeA3Q3NkTYSCzpUc9cZFXICe2yiq9DR0UpWhrSMKWc1zyZnyJVf88reiqRTk8wFqige_L26c8dtba1nE9uUgqUec2zOHKjG9MAoG33QbjQFykeux5why_YQxWhRhM3_M33sz54hyYjxNQ7HH0x1ncS1llvOZMVP6jGMK_ewVIghUsFH4dKs-sSWgOE4JEqFJwf8U4KVhqhE43gCm8hOaDdKKGZap2agQzGMnt2a_D7fZSFVKDZjdWRtusaRDGIUMAA_H8tvLujq",

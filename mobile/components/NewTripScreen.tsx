@@ -19,6 +19,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import * as Contacts from 'expo-contacts';
+import * as FileSystem from 'expo-file-system';
 import NetInfo from '@react-native-community/netinfo';
 
 import { RootStackParamList } from '../types';
@@ -53,7 +54,26 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
             });
 
             if (!result.canceled) {
-                setCoverImage(result.assets[0].uri);
+                const asset = result.assets[0];
+                try {
+                    // Mover para diretório permanente (ou cache se docDir falhar)
+                    const fileName = asset.uri.split('/').pop();
+                    const docDir = (FileSystem as any).documentDirectory || (FileSystem as any).cacheDirectory;
+                    if (!docDir) {
+                        console.warn('Nenhum diretório de escrita disponível. Usando URI original.');
+                        setCoverImage(asset.uri);
+                        return;
+                    }
+                    const newPath = docDir + fileName;
+                    await FileSystem.copyAsync({
+                        from: asset.uri,
+                        to: newPath
+                    });
+                    setCoverImage(newPath);
+                } catch (e) {
+                    console.error('Erro ao salvar imagem localmente:', e);
+                    setCoverImage(asset.uri); // Fallback para cache uri
+                }
             }
         } catch (e) {
             Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
@@ -501,7 +521,8 @@ const CustomCalendar: React.FC<{
 
 const Participant: React.FC<{ avatar: any; name: string; isUser?: boolean }> = ({ avatar, name, isUser }) => {
     // Auxiliar para lidar com a fonte do avatar (uri ou local)
-    const imageSource = typeof avatar === 'string' ? { uri: avatar } : avatar;
+    const source = avatar || IMAGES.userAvatar;
+    const imageSource = typeof source === 'string' ? { uri: source } : source;
 
     return (
         <View style={styles.participant}>

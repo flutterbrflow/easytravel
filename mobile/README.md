@@ -41,25 +41,53 @@ npm run web
 
 ## 📱 Funcionalidades
 
+### Sistema Offline-First
+
+- ✅ **Cache Offline Completo**: Funciona totalmente sem internet
+- ✅ **Sincronização Automática**: Dados sincronizam ao voltar online
+- ✅ **Cache de Imagens**: Imagens permanecem disponíveis offline
+- ✅ **Fila de Mutações**: Alterações offline processadas quando online
+
+### Funcionalidades Principais
+
 - ✅ Tela de boas-vindas com navegação
-- ✅ Lista de viagens com tabs (Próximas/Passadas)
-- ✅ Criar nova viagem
+- ✅ Autenticação com Supabase (Login/Logout)
+- ✅ Lista de viagens (Próximas/Passadas/Concluídas)
+- ✅ Criar e editar viagens (com imagem de capa)
+- ✅ Gerenciamento de despesas por viagem
+- ✅ Upload de fotos (Avatar e memórias)
+- ✅ Perfil de usuário com estatísticas
 - ✅ Suporte a modo escuro
 - ✅ Navegação com tabs inferior
 - ✅ Interface responsiva
+- ✅ Pull-to-refresh em todas as listas
 
 ## 🏗️ Estrutura do Projeto
 
 ```
-easytravel-native/
-├── components/          # Componentes React Native
+mobile/
+├── components/          # Componentes e telas
 │   ├── WelcomeScreen.tsx
 │   ├── TripListScreen.tsx
-│   └── NewTripScreen.tsx
-├── constants/           # Constantes e dados
-│   └── index.ts
+│   ├── NewTripScreen.tsx
+│   ├── TripDetailScreen.tsx
+│   ├── ProfileScreen.tsx
+│   ├── CachedImage.tsx  # Cache de imagens offline
+│   └── ...
+├── contexts/            # Contextos React
+│   ├── AuthContext.tsx  # Autenticação
+│   └── NetworkContext.tsx  # Conectividade e sync
+├── services/            # Camada de dados
+│   ├── api.ts          # API com gravação otimista
+│   ├── localDb.ts      # Banco SQLite local
+│   └── syncService.ts  # Sincronização bidirecional
 ├── types/               # TypeScript types
+│   ├── index.ts
+│   └── database-types.ts  # Types do Supabase
+├── constants/           # Constantes
 │   └── index.ts
+├── lib/                 # Configurações
+│   └── supabase.ts
 ├── App.tsx              # Componente raiz com navegação
 └── package.json
 ```
@@ -72,9 +100,14 @@ easytravel-native/
 - **React Navigation** - Navegação
   - Native Stack Navigator
   - Bottom Tabs Navigator
+- **Supabase** - Backend e autenticação
+- **Expo SQLite** - Banco de dados local
+- **Expo FileSystem** - Armazenamento de arquivos
+- **NetInfo** - Monitoramento de conectividade
 - **Expo Linear Gradient** - Gradientes
 - **Expo Vector Icons** - Ícones Material Community
 - **React Native Safe Area Context** - Safe areas
+- **Expo Image Picker** - Seleção de fotos
 
 ## 🎨 Componentes
 
@@ -167,12 +200,19 @@ Acessível através do QR code ou terminal após `npm start`
 
 ## 📚 Documentação
 
-Para documentação completa, consulte a pasta `/doc` no projeto web:
-- Visão geral do projeto
-- Arquitetura da aplicação
-- Guia de componentes
-- Guia do desenvolvedor
+Para documentação completa, consulte a pasta `../doc/`:
+- **Visão geral do projeto** (01-visao-geral.md)
+- **Arquitetura da aplicação** (02-arquitetura.md)
+- **Guia de componentes** (03-componentes.md)
+- **Guia do desenvolvedor** (04-guia-dev.md)
 - **Guia de conversão React Native** (06-react-native.md)
+- **Sistema Offline-First** (06-react-native-offline.md) 📱
+
+### Documentação Offline
+
+Documentação detalhada do sistema de cache offline está disponível em:
+- **Walkthrough técnico**: `C:\Users\julio\.gemini\antigravity\brain\...\walkthrough.md`
+- **Guia de testes**: `C:\Users\julio\.gemini\antigravity\brain\...\testing_guide.md`
 
 ## 🔗 Links Úteis
 

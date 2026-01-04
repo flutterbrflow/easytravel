@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -24,10 +24,13 @@ import { RootStackParamList } from '../types';
 import { IMAGES, COLORS } from '../constants';
 import { api, TripRow } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useNetwork } from '../contexts/NetworkContext';
 import { SyncIndicator } from './SyncIndicator';
+import { CachedImage } from './CachedImage';
 
 const TripListScreen: React.FC<any> = ({ navigation }) => {
     const { user } = useAuth();
+    const { checkConnectivity, syncNow, isSyncing } = useNetwork();
     const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
     const [trips, setTrips] = useState<TripRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -40,6 +43,13 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
             loadTrips();
         }, [])
     );
+
+    // Auto-reload quando terminar a sincronização (ex: pull deletions)
+    useEffect(() => {
+        if (!isSyncing) {
+            loadTrips();
+        }
+    }, [isSyncing]);
 
     const loadTrips = async () => {
         try {
@@ -81,15 +91,17 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         try {
-            // Recarregar viagens
-            await loadTrips();
+            // Tentar sincronização forçada se estiver online
+            const isOnline = await checkConnectivity();
 
-            // Atualizar sessão do usuário APENAS se estiver online
-            const networkState = await NetInfo.fetch();
-            if (networkState.isConnected) {
+            if (isOnline && syncNow) {
+                await syncNow(); // Push/Pull
                 const { error } = await supabase.auth.refreshSession();
                 if (error) console.log('Erro ao atualizar sessão:', error);
             }
+
+            // Recarregar dados locais (pode ter mudado após sync)
+            await loadTrips();
         } catch (error) {
             console.error('Erro ao atualizar:', error);
         } finally {
@@ -180,6 +192,15 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
         }
     };
 
+
+
+    const [avatarError, setAvatarError] = useState(false);
+    const avatarUrl = user?.user_metadata?.avatar_url;
+
+    useEffect(() => {
+        setAvatarError(false);
+    }, [avatarUrl]);
+
     return (
         <SafeAreaView
             style={[styles.container, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.backgroundLight }]}
@@ -189,8 +210,12 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
                 <View style={styles.headerRow}>
                     <TouchableOpacity onPress={pickImage} disabled={uploading}>
                         <Image
-                            source={{ uri: (user?.user_metadata?.avatar_url ? `${user.user_metadata.avatar_url}?t=${new Date().getTime()}` : IMAGES.userAvatar) }}
+                            source={(!avatarError && avatarUrl)
+                                ? { uri: avatarUrl }
+                                : IMAGES.userAvatar
+                            }
                             style={[styles.avatar, uploading && { opacity: 0.5 }]}
+                            onError={() => setAvatarError(true)}
                         />
                         {uploading && (
                             <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
@@ -338,11 +363,13 @@ const TripCard: React.FC<{ trip: TripRow; isDark: boolean; onDelete: () => void;
         onPress={onPress}
     >
         <View style={styles.cardImageWrapper}>
-            <Image
-                source={{ uri: trip.image_url || IMAGES.genericMap }}
+            <CachedImage
+                uri={trip.image_url || undefined}
                 style={styles.cardImage}
+                placeholder={IMAGES.genericMap}
                 resizeMode="cover"
             />
+
             <LinearGradient
                 colors={['transparent', 'rgba(0,0,0,0.6)']}
                 style={styles.cardGradient}

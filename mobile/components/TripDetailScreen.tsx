@@ -21,6 +21,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import * as Contacts from 'expo-contacts';
+import * as FileSystem from 'expo-file-system';
 
 import { RootStackParamList } from '../types';
 import { api, TripRow, ExpenseRow, MemoryRow, ExpenseInsert } from '../services/api'; // Assuming ExpenseInsert is exported
@@ -233,7 +234,17 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                 quality: 0.8,
             });
             if (!result.canceled) {
-                setEditCoverImage(result.assets[0].uri);
+                const asset = result.assets[0];
+                try {
+                    const fileName = asset.uri.split('/').pop();
+                    const docDir = (FileSystem as any).documentDirectory || (FileSystem as any).cacheDirectory;
+                    if (!docDir) throw new Error('No writable directory');
+                    const newPath = docDir + (fileName || 'cover.jpg');
+                    await FileSystem.copyAsync({ from: asset.uri, to: newPath });
+                    setEditCoverImage(newPath);
+                } catch (e) {
+                    setEditCoverImage(asset.uri);
+                }
             }
         } catch (e) {
             Alert.alert('Erro', 'Não foi possível selecionar imagem.');

@@ -12,6 +12,8 @@ export type ExpenseRow = Database['public']['Tables']['expenses']['Row'];
 export type ExpenseInsert = Database['public']['Tables']['expenses']['Insert'];
 export type MemoryRow = Database['public']['Tables']['memories']['Row'];
 export type MemoryInsert = Database['public']['Tables']['memories']['Insert'];
+export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 
 const isOnline = async () => {
     const state = await NetInfo.fetch();
@@ -188,4 +190,19 @@ export const api = {
             return data.publicUrl;
         }
     },
+
+    profiles: {
+        async get(id: string) {
+            return await db.getFirstAsync<ProfileRow>('SELECT * FROM profiles WHERE id = ?', [id]);
+        },
+
+        async update(id: string, updates: Partial<ProfileInsert>) {
+            await optimisticWrite(
+                'profiles', 'UPDATE', updates, id,
+                `UPDATE profiles SET ${Object.keys(updates).map(k => `${k} = ?`).join(', ')} WHERE id = ?`,
+                [...Object.values(updates), id]
+            );
+            return updates;
+        }
+    }
 };

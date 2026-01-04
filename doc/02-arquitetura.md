@@ -42,13 +42,23 @@ easytravel/
 
 ```mermaid
 graph TD
-    A[UI Components] -->|Action| B[Service Layer]
-    B -->|Request| C[Supabase Client]
-    C -->|SQL/API| D[(Supabase DB)]
-    D -->|Data| C
-    C -->|Response| B
-    B -->|State Update| A
+    A[UI Components] -->|Read| B[(Local SQLite)]
+    A -->|Action| C[Service Layer]
+    C -->|Optimistic Write| B
+    C -->|Queue Mutation| B
+    D[SyncService] -->|Push Mutations| E[Supabase Client]
+    E -->|API| F[(Supabase DB)]
+    D -->|Pull Updates| F
+    D -->|Update| B
+    B -->|React State Update| A
 ```
+
+## Estratégia de Sincronização (Offline-First)
+1. **Modo Online/Offline Transparente**: O usuário interage sempre com o banco local.
+2. **Fila de Mutações**: Alterações (INSERT, UPDATE, DELETE) são salvas em uma fila (`mutation_queue`) localmente.
+3. **Imagens Offline**: Imagens selecionadas offline são salvas com URI local (`file://`). Durante o sync, o `SyncService` intercepta, faz upload para o Storage, e atualiza o link antes de salvar no banco remoto.
+4. **Resolução de Conflitos**: "Last Write Wins" (Última gravação vence) simplificado, com prioridade para o servidor no Pull.
+5. **Remoção Remota**: Processo dedicado (`pullDeletions`) identifica e remove itens locais que foram excluídos no servidor.
 
 ## Camadas da Aplicação
 
@@ -56,8 +66,17 @@ graph TD
 Componentes visuais (Screens, Modals, Cards). Responsável apenas pelo display e interação local.
 
 ### 2. Camada de Serviços (Service Layer)
-**Localização:** `services/api.ts`
-Abstração central para chamadas ao Supabase. Contém objetos para `trips`, `users`, `storage`, permitindo fácil manutenção e testes.
+**Localização:** `services/api.ts` e `services/syncService.ts`
+Abstração central para operações de dados. Adota uma abordagem **Offline-First**:
+- **Leitura:** Sempre do banco local (`sqlite`).
+- **Escrita:** Otimista no banco local + Fila de Mutação.
+- **Sincronização:** `SyncService` gerencia Push (envio de mutações) e Pull (busca de diferenças) com o Supabase.
+
+### 2a. Camada de Persistência Local
+**Localização:** `services/localDb.ts`
+- **Tecnologia:** Expo SQLite
+- **Função:** Cache persistente completo dos dados para funcionamento offline.
+- **Schema:** Réplica das tabelas do Supabase + Tabelas de controle (`mutation_queue`, `sync_state`).
 
 ### 3. Camada de Contexto (State)
 **Localização:** `contexts/AuthContext.tsx`

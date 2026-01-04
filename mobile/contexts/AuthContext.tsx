@@ -23,10 +23,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setLoading(false);
-        });
+        const initSession = async () => {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) throw error;
+                setSession(session);
+            } catch (e) {
+                console.log('Sessão offline ou erro de auth inicial (ignorado)');
+            } finally {
+                setLoading(false);
+            }
+        };
+        initSession();
 
         const {
             data: { subscription },
