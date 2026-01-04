@@ -22,7 +22,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
 
     // Budget Modal State
     const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
-    const [newBudget, setNewBudget] = useState(trip.budget?.toString() || '');
+    const [newBudget, setNewBudget] = useState((trip as any).budget?.toString() || '');
     const [loadingBudget, setLoadingBudget] = useState(false);
 
     const handleUpdateBudget = async () => {
@@ -32,12 +32,12 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
         }
         setLoadingBudget(true);
         try {
-            await api.trips.update(trip.id, { budget: parseFloat(newBudget) });
+            await api.trips.update(trip.id, { budget: parseFloat(newBudget) } as any);
             setIsBudgetModalOpen(false);
             Alert.alert('Sucesso', 'Orçamento atualizado!');
             if (onRefresh) onRefresh();
         } catch (error) {
-            console.error(error);
+            console.error('Erro no orçamento:', error);
             Alert.alert('Erro', 'Falha ao atualizar orçamento');
         } finally {
             setLoadingBudget(false);
@@ -207,7 +207,7 @@ const BudgetTab: React.FC<BudgetTabProps> = ({ expenses, trip, onAddExpense, onE
                 {/* 4. Distribution */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Distribuição</Text>
-                    <TouchableOpacity onPress={() => { setNewBudget(trip.budget?.toString() || ''); setIsBudgetModalOpen(true); }}>
+                    <TouchableOpacity onPress={() => { setNewBudget((trip as any).budget?.toString() || ''); setIsBudgetModalOpen(true); }}>
                         <Text style={styles.configureText}>CONFIGURAR</Text>
                     </TouchableOpacity>
                 </View>

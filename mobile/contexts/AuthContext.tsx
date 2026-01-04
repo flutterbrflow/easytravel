@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     const { data, error } = await supabase.auth.getSession();
                     if (error) {
                         // Token might be invalid or expired, just clear session
-                        console.log('Session refresh error (handled):', error.message);
+                        console.log('Erro ao atualizar sessão (tratado):', error.message);
                         setSession(null);
                     } else if (!data.session) {
                         setSession(null);

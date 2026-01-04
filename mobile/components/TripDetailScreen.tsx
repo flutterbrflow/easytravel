@@ -201,7 +201,7 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                 setEditCoverImage(tripData.image_url);
             }
         } catch (error) {
-            console.error('Error loading trip details:', error);
+            console.error('Erro ao carregar detalhes da viagem:', error);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -282,13 +282,13 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                         });
 
                     if (uploadError) {
-                        console.error('Upload Error', uploadError);
+                        console.error('Erro no envio:', uploadError);
                     } else {
                         const { data } = supabase.storage.from('trip-images').getPublicUrl(filePath);
                         imageUrl = data.publicUrl;
                     }
                 } catch (e) {
-                    console.error('Image processing error', e);
+                    console.error('Erro no processamento da imagem:', e);
                 }
             }
 
@@ -345,7 +345,7 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
             const updatedExpenses = await api.expenses.list(trip.id);
             setExpenses(updatedExpenses || []);
         } catch (error) {
-            console.error('Error saving expense:', error);
+            console.error('Erro ao salvar despesa:', error);
             Alert.alert('Erro', 'Falha ao salvar despesa');
         }
     };
@@ -364,7 +364,7 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                             await api.expenses.delete(id);
                             setExpenses(prev => prev.filter(e => e.id !== id));
                         } catch (error) {
-                            console.error('Error deleting expense:', error);
+                            console.error('Erro ao excluir despesa:', error);
                             Alert.alert('Erro', 'Falha ao excluir despesa');
                         }
                     }

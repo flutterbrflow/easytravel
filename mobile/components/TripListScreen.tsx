@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import NetInfo from '@react-native-community/netinfo';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
@@ -23,6 +24,7 @@ import { RootStackParamList } from '../types';
 import { IMAGES, COLORS } from '../constants';
 import { api, TripRow } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { SyncIndicator } from './SyncIndicator';
 
 const TripListScreen: React.FC<any> = ({ navigation }) => {
     const { user } = useAuth();
@@ -45,7 +47,7 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
             const data = await api.trips.list();
             setTrips(data);
         } catch (error) {
-            console.error('Error loading trips', error);
+            console.error('Erro ao carregar viagens', error);
         } finally {
             setLoading(false);
         }
@@ -65,7 +67,7 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
                             await api.trips.delete(id);
                             setTrips(prev => prev.filter(t => t.id !== id));
                         } catch (error) {
-                            console.error('Error deleting trip:', error);
+                            console.error('Erro ao excluir viagem:', error);
                             Alert.alert('Erro', 'Não foi possível excluir a viagem.');
                         }
                     }
@@ -82,12 +84,14 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
             // Recarregar viagens
             await loadTrips();
 
-            // Atualizar sessão do usuário para obter novo avatar/metadados
-            const { error } = await supabase.auth.refreshSession();
-            if (error) console.log('Error refreshing session:', error);
-
+            // Atualizar sessão do usuário APENAS se estiver online
+            const networkState = await NetInfo.fetch();
+            if (networkState.isConnected) {
+                const { error } = await supabase.auth.refreshSession();
+                if (error) console.log('Erro ao atualizar sessão:', error);
+            }
         } catch (error) {
-            console.error('Error refreshing:', error);
+            console.error('Erro ao atualizar:', error);
         } finally {
             setRefreshing(false);
         }
@@ -106,7 +110,7 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
                 await uploadAvatar(result.assets[0].uri);
             }
         } catch (error) {
-            console.error('Error picking image:', error);
+            console.error('Erro ao selecionar imagem:', error);
         }
     };
 
@@ -169,7 +173,7 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
             }
 
         } catch (error) {
-            console.error('Error uploading avatar:', error);
+            console.error('Erro ao enviar avatar:', error);
             // alert('Erro ao atualizar avatar'); 
         } finally {
             setUploading(false);
@@ -181,20 +185,13 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
             style={[styles.container, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.backgroundLight }]}
             edges={['top', 'left', 'right']}
         >
-            {/* Cabeçalho */}
             <View style={styles.header}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity onPress={pickImage} disabled={uploading}>
-                        {(() => {
-                            const avatarUrl = user?.user_metadata?.avatar_url;
-                            const uri = avatarUrl ? `${avatarUrl}?t=${new Date().getTime()}` : IMAGES.userAvatar;
-                            return (
-                                <Image
-                                    source={{ uri }}
-                                    style={[styles.avatar, uploading && { opacity: 0.5 }]}
-                                />
-                            );
-                        })()}
+                        <Image
+                            source={{ uri: (user?.user_metadata?.avatar_url ? `${user.user_metadata.avatar_url}?t=${new Date().getTime()}` : IMAGES.userAvatar) }}
+                            style={[styles.avatar, uploading && { opacity: 0.5 }]}
+                        />
                         {uploading && (
                             <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
                                 <ActivityIndicator size="small" color={COLORS.primary} />
@@ -204,58 +201,59 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
 
                     <Text style={[styles.headerCenterTitle, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>Minhas Viagens</Text>
 
-                    <TouchableOpacity
-                        style={[styles.iconButton, { backgroundColor: isDark ? '#1e2a36' : '#f3f4f6' }]}
-                        onPress={() => navigation.navigate('Profile')}
-                    >
-                        <MaterialCommunityIcons name="cog" size={24} color={isDark ? COLORS.textLight : COLORS.textDark} />
-                    </TouchableOpacity>
-                </View>
-                <Text style={[styles.headerGreeting, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
-                    Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
-                </Text>
-
-                {/* Segmented Control */}
-                <View style={[styles.segmentedControl, { backgroundColor: isDark ? '#1e2a36' : '#f0f2f4' }]}>
-                    <View style={[
-                        styles.segmentedIndicator,
-                        { backgroundColor: isDark ? '#2c3b4a' : '#ffffff' },
-                        activeTab === 'past' && styles.segmentedIndicatorRight
-                    ]} />
-                    <TouchableOpacity
-                        style={styles.segmentButton}
-                        onPress={() => setActiveTab('upcoming')}
-                    >
-                        <Text style={[
-                            styles.segmentText,
-                            {
-                                color: activeTab === 'upcoming'
-                                    ? (isDark ? COLORS.textLight : COLORS.textDark)
-                                    : (isDark ? '#9ba8b8' : '#617589')
-                            }
-                        ]}>
-                            Próximas
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.segmentButton}
-                        onPress={() => setActiveTab('past')}
-                    >
-                        <Text style={[
-                            styles.segmentText,
-                            {
-                                color: activeTab === 'past'
-                                    ? (isDark ? COLORS.textLight : COLORS.textDark)
-                                    : (isDark ? '#9ba8b8' : '#617589')
-                            }
-                        ]}>
-                            Passadas
-                        </Text>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <SyncIndicator />
+                        <TouchableOpacity
+                            style={[styles.iconButton, { backgroundColor: isDark ? '#1e2a36' : '#f3f4f6' }]}
+                            onPress={() => navigation.navigate('Profile')}
+                        >
+                            <MaterialCommunityIcons name="cog" size={24} color={isDark ? COLORS.textLight : COLORS.textDark} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
+            <Text style={[styles.headerGreeting, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
+                Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
+            </Text>
 
-            {/* Main List */}
+            <View style={[styles.segmentedControl, { backgroundColor: isDark ? '#1e2a36' : '#f0f2f4' }]}>
+                <View style={[
+                    styles.segmentedIndicator,
+                    { backgroundColor: isDark ? '#2c3b4a' : '#ffffff' },
+                    activeTab === 'past' && styles.segmentedIndicatorRight
+                ]} />
+                <TouchableOpacity
+                    style={styles.segmentButton}
+                    onPress={() => setActiveTab('upcoming')}
+                >
+                    <Text style={[
+                        styles.segmentText,
+                        {
+                            color: activeTab === 'upcoming'
+                                ? (isDark ? COLORS.textLight : COLORS.textDark)
+                                : (isDark ? '#9ba8b8' : '#617589')
+                        }
+                    ]}>
+                        Próximas
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.segmentButton}
+                    onPress={() => setActiveTab('past')}
+                >
+                    <Text style={[
+                        styles.segmentText,
+                        {
+                            color: activeTab === 'past'
+                                ? (isDark ? COLORS.textLight : COLORS.textDark)
+                                : (isDark ? '#9ba8b8' : '#617589')
+                        }
+                    ]}>
+                        Passadas
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
             {loading ? (
                 <View style={styles.emptyContainer}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
@@ -322,7 +320,6 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
                 />
             )}
 
-            {/* FAB */}
             <TouchableOpacity
                 style={styles.fab}
                 onPress={() => navigation.navigate('NewTrip', {})}
@@ -452,6 +449,7 @@ const styles = StyleSheet.create({
         fontSize: 24, // Reduced from 32
         fontWeight: 'bold',
         marginBottom: 12, // Increased margin
+        marginHorizontal: 16,
     },
     cardDescription: {
         fontSize: 14,
@@ -463,6 +461,7 @@ const styles = StyleSheet.create({
         padding: 4,
         flexDirection: 'row',
         position: 'relative',
+        marginHorizontal: 16,
     },
     segmentedIndicator: {
         position: 'absolute',

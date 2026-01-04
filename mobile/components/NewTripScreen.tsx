@@ -19,6 +19,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import * as Contacts from 'expo-contacts';
+import NetInfo from '@react-native-community/netinfo';
 
 import { RootStackParamList } from '../types';
 import { COLORS, IMAGES } from '../constants';
@@ -38,7 +39,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
     const [coverImage, setCoverImage] = useState<string | null>(null);
 
-    // Date Selection State
+    // Estado de Seleção de Data
     const [startDate, setStartDate] = useState<string | null>(null);
     const [endDate, setEndDate] = useState<string | null>(null);
 
@@ -64,7 +65,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
             setStartDate(date);
             setEndDate(null);
         } else {
-            // If selecting a date before start date, make it the new start date
+            // Se selecionar uma data anterior à data de início, torna-se a nova data de início
             if (date < startDate) {
                 setStartDate(date);
                 setEndDate(null);
@@ -86,12 +87,12 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
             });
             if (result.action === Share.sharedAction) {
                 if (result.activityType) {
-                    // shared with activity type of result.activityType
+                    // compartilhado com o tipo de atividade result.activityType
                 } else {
-                    // shared
+                    // compartilhado
                 }
             } else if (result.action === Share.dismissedAction) {
-                // dismissed
+                // dispensado
             }
         } catch (error: any) {
             Alert.alert(error.message);
@@ -141,30 +142,36 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
             let imageUrl = IMAGES.genericMap;
 
             if (coverImage) {
-                try {
-                    const response = await fetch(coverImage);
-                    const arrayBuffer = await response.arrayBuffer();
-                    const fileExt = coverImage.split('.').pop()?.split('?')[0] || 'jpg';
-                    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-                    const filePath = `${fileName}`;
+                const networkState = await NetInfo.fetch();
+                if (networkState.isConnected) {
+                    try {
+                        const response = await fetch(coverImage);
+                        const arrayBuffer = await response.arrayBuffer();
+                        const fileExt = coverImage.split('.').pop()?.split('?')[0] || 'jpg';
+                        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+                        const filePath = `${fileName}`;
 
-                    const { error: uploadError } = await supabase.storage
-                        .from('trip-images')
-                        .upload(filePath, arrayBuffer, {
-                            contentType: response.headers.get('content-type') || 'image/jpeg',
-                            upsert: true,
-                        });
-
-                    if (uploadError) {
-                        console.error('Error uploading trip image:', uploadError);
-                    } else {
-                        const { data: { publicUrl } } = supabase.storage
+                        const { error: uploadError } = await supabase.storage
                             .from('trip-images')
-                            .getPublicUrl(filePath);
-                        imageUrl = publicUrl;
+                            .upload(filePath, arrayBuffer, {
+                                contentType: response.headers.get('content-type') || 'image/jpeg',
+                                upsert: true,
+                            });
+
+                        if (uploadError) {
+                            console.error('Erro ao enviar imagem da viagem:', uploadError);
+                        } else {
+                            const { data: { publicUrl } } = supabase.storage
+                                .from('trip-images')
+                                .getPublicUrl(filePath);
+                            imageUrl = publicUrl;
+                        }
+                    } catch (e) {
+                        console.error('Erro ao ler/enviar imagem:', e);
                     }
-                } catch (e) {
-                    console.error('Error reading/uploading image:', e);
+                } else {
+                    console.log('Offline: Usando imagem local temporariamente');
+                    imageUrl = coverImage;
                 }
             }
 
@@ -180,7 +187,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
 
             navigation.goBack();
         } catch (error: any) {
-            console.error('Error saving trip', error);
+            console.error('Erro ao salvar viagem', error);
             Alert.alert('Erro', 'Não foi possível salvar a viagem: ' + error.message);
         } finally {
             setLoading(false);
@@ -192,7 +199,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
             style={[styles.container, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.backgroundLight }]}
             edges={['top', 'left', 'right']}
         >
-            {/* Header */}
+            {/* Cabeçalho */}
             <View style={[styles.header, { borderBottomColor: isDark ? '#22303e' : '#e5e7eb' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Text style={styles.cancelButton}>Cancelar</Text>
@@ -218,7 +225,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Destination Input */}
+                    {/* Entrada de Destino */}
                     <View style={styles.section}>
                         <Text style={[styles.label, { color: isDark ? '#e5e7eb' : COLORS.textDark }]}>
                             Para onde você vai?
@@ -235,7 +242,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                         </View>
                     </View>
 
-                    {/* Cover Image Picker */}
+                    {/* Seletor de Imagem de Capa */}
                     <View style={styles.section}>
                         <Text style={[styles.label, { color: isDark ? '#e5e7eb' : COLORS.textDark }]}>
                             Imagem de Capa
@@ -263,7 +270,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Date Selection */}
+                    {/* Seleção de Data */}
                     <View style={styles.section}>
                         <View style={styles.sectionHeader}>
                             <Text style={[styles.label, { color: isDark ? '#e5e7eb' : COLORS.textDark }]}>
@@ -274,7 +281,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Selected Dates Display */}
+                        {/* Exibição das Datas Selecionadas */}
                         <View style={styles.dateDisplayRow}>
                             <View style={[styles.dateDisplayBox, { backgroundColor: isDark ? '#1e2a36' : '#ffffff' }]}>
                                 <Text style={styles.dateDisplayLabel}>IDA</Text>
@@ -290,7 +297,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                             </View>
                         </View>
 
-                        {/* Custom Calendar Component */}
+                        {/* Componente de Calendário Personalizado */}
                         <CustomCalendar
                             startDate={startDate || ''}
                             endDate={endDate || ''}
@@ -299,7 +306,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                         />
                     </View>
 
-                    {/* Participants */}
+                    {/* Participantes */}
                     <View style={styles.section}>
                         <View style={styles.sectionHeader}>
                             <Text style={[styles.labelBig, { color: isDark ? '#e5e7eb' : COLORS.textDark }]}>
@@ -326,7 +333,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                         </ScrollView>
                     </View>
 
-                    {/* Notes */}
+                    {/* Notas */}
                     <View style={styles.section}>
                         <Text style={[styles.label, { color: isDark ? '#e5e7eb' : COLORS.textDark }]}>
                             Notas ou Descrição
@@ -349,7 +356,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Sticky Footer CTA */}
+            {/* Rodapé Fixo CTA */}
             <View style={[styles.footer, { backgroundColor: isDark ? COLORS.backgroundDark : COLORS.backgroundLight }]}>
                 <TouchableOpacity
                     style={styles.createButton}
@@ -365,7 +372,7 @@ const NewTripScreen: React.FC<Props> = ({ navigation }) => {
     );
 };
 
-// Custom Calendar Component for Mobile
+// Componente de Calendário Personalizado para Mobile
 const CustomCalendar: React.FC<{
     startDate: string;
     endDate: string;
@@ -375,7 +382,7 @@ const CustomCalendar: React.FC<{
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Sunday
+    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Domingo
 
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
@@ -493,7 +500,7 @@ const CustomCalendar: React.FC<{
 };
 
 const Participant: React.FC<{ avatar: any; name: string; isUser?: boolean }> = ({ avatar, name, isUser }) => {
-    // Helper to handle avatar source (uri or local)
+    // Auxiliar para lidar com a fonte do avatar (uri ou local)
     const imageSource = typeof avatar === 'string' ? { uri: avatar } : avatar;
 
     return (

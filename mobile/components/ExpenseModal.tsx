@@ -85,7 +85,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             });
             onClose();
         } catch (error) {
-            console.error('Error saving expense:', error);
+            console.error('Erro ao salvar despesa:', error);
             Alert.alert('Erro', 'Não foi possível salvar a despesa.');
         } finally {
             setLoading(false);

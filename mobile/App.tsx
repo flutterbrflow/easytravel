@@ -129,17 +129,23 @@ const MainNavigator = () => {
   );
 };
 
+import { NetworkProvider } from './contexts/NetworkContext';
+
+// ... other imports
+
 export default function App() {
   const colorScheme = useColorScheme();
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationContainer>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <MainNavigator />
-        </NavigationContainer>
-      </AuthProvider>
+      <NetworkProvider>
+        <AuthProvider>
+          <NavigationContainer>
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+            <MainNavigator />
+          </NavigationContainer>
+        </AuthProvider>
+      </NetworkProvider>
     </SafeAreaProvider>
   );
 }

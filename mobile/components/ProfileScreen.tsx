@@ -126,7 +126,7 @@ const ProfileScreen: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.error('Error loading stats:', error);
+            console.error('Erro ao carregar estatísticas:', error);
         } finally {
             setLoadingStats(false);
         }
@@ -167,7 +167,7 @@ const ProfileScreen: React.FC = () => {
                 Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
             }
         } catch (error) {
-            console.error('Error updating profile:', error);
+            console.error('Erro ao atualizar perfil:', error);
             Alert.alert('Erro', 'Falha ao atualizar perfil.');
         } finally {
             setSavingProfile(false);
@@ -209,7 +209,7 @@ const ProfileScreen: React.FC = () => {
                 await uploadAvatar(result.assets[0].uri);
             }
         } catch (error) {
-            console.error('Error picking profile image:', error);
+            console.error('Erro ao selecionar imagem de perfil:', error);
             Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
         }
     };
@@ -260,7 +260,7 @@ const ProfileScreen: React.FC = () => {
                 }));
             }
         } catch (error) {
-            console.error('Error uploading avatar:', error);
+            console.error('Erro ao enviar avatar:', error);
             Alert.alert('Erro', 'Falha ao atualizar foto de perfil.');
         } finally {
             setUploading(false);
