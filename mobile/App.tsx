@@ -130,6 +130,7 @@ const MainNavigator = () => {
 };
 
 import { NetworkProvider } from './contexts/NetworkContext';
+import { SyncIndicator } from './components/SyncIndicator';
 
 // ... other imports
 

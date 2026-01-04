@@ -29,7 +29,9 @@ import ExpenseModal from './ExpenseModal'; // Import Modal
 import BudgetTab from './BudgetTab'; // Import new Budget Tab
 import { COLORS, IMAGES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
+import { useNetwork } from '../contexts/NetworkContext';
 import { supabase } from '../lib/supabase';
+import { CachedImage } from './CachedImage';
 
 const { width } = Dimensions.get('window');
 
@@ -155,6 +157,7 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
     const { user } = useAuth();
     const colorScheme = useColorScheme(); // Added useColorScheme
     const isDark = colorScheme === 'dark'; // Derived isDark from colorScheme
+    const { isConnected } = useNetwork(); // Add network state hook
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [refreshing, setRefreshing] = useState(false); // Add refreshing state
@@ -273,33 +276,44 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
 
         setSaving(true);
         try {
-            let imageUrl = editCoverImage;
+            // Se houver nova imagem, fazer upload
+            let imageUrl = editCoverImage || undefined;
+            if (editCoverImage && editCoverImage.startsWith('file://')) {
+                // Verificar se está online antes de tentar upload
 
-            // If image changed (checking if it's a local uri, not http)
-            if (editCoverImage && !editCoverImage.startsWith('http')) {
-                // Upload logic reuse
-                try {
-                    const response = await fetch(editCoverImage);
-                    const arrayBuffer = await response.arrayBuffer();
-                    const fileExt = editCoverImage.split('.').pop()?.split('?')[0] || 'jpg';
-                    const fileName = `${user?.id || 'anon'}/${Date.now()}.${fileExt}`;
-                    const filePath = `${fileName}`;
+                if (isConnected) {
+                    // Online: fazer upload agora
+                    try {
+                        const response = await fetch(editCoverImage);
+                        const arrayBuffer = await response.arrayBuffer();
+                        const fileExt = editCoverImage.split('.').pop()?.split('?')[0] || 'jpg';
+                        const fileName = `${user?.id || 'anon'}/${Date.now()}.${fileExt}`;
+                        const filePath = `${fileName}`;
 
-                    const { error: uploadError } = await supabase.storage
-                        .from('trip-images')
-                        .upload(filePath, arrayBuffer, {
-                            contentType: response.headers.get('content-type') || 'image/jpeg',
-                            upsert: true,
-                        });
+                        const { error: uploadError } = await supabase.storage
+                            .from('trip-images')
+                            .upload(filePath, arrayBuffer, {
+                                contentType: response.headers.get('content-type') || 'image/jpeg',
+                                upsert: true,
+                            });
 
-                    if (uploadError) {
-                        console.error('Erro no envio:', uploadError);
-                    } else {
-                        const { data } = supabase.storage.from('trip-images').getPublicUrl(filePath);
-                        imageUrl = data.publicUrl;
+                        if (uploadError) {
+                            console.error('Erro no envio:', uploadError);
+                            // Manter file:// path para sync posterior
+                            imageUrl = editCoverImage;
+                        } else {
+                            const { data } = supabase.storage.from('trip-images').getPublicUrl(filePath);
+                            imageUrl = data.publicUrl;
+                        }
+                    } catch (e) {
+                        console.error('Erro no processamento da imagem:', e);
+                        // Manter file:// path para sync posterior
+                        imageUrl = editCoverImage;
                     }
-                } catch (e) {
-                    console.error('Erro no processamento da imagem:', e);
+                } else {
+                    // Offline: usar caminho local, será feito upload na sync
+                    console.log('[Edit] Offline - imagem será enviada na sincronização');
+                    imageUrl = editCoverImage;
                 }
             }
 
@@ -416,8 +430,8 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
-                <Image
-                    source={{ uri: editCoverImage || trip?.image_url || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2070&auto=format&fit=crop' }}
+                <CachedImage
+                    uri={editCoverImage || trip?.image_url || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2070&auto=format&fit=crop'}
                     style={styles.headerImage}
                 />
                 <View style={styles.headerOverlay} />
@@ -486,7 +500,9 @@ const TripDetailScreen = ({ route, navigation }: { route: any, navigation: any }
                                 <Text style={styles.label}>Imagem de Capa</Text>
                                 <TouchableOpacity style={styles.coverImageContainer} onPress={pickImage}>
                                     {editCoverImage ? (
-                                        <Image source={{ uri: editCoverImage }} style={styles.coverImage} />
+                                        <CachedImage uri={editCoverImage} style={styles.coverImage} />
+                                    ) : trip?.image_url ? (
+                                        <CachedImage uri={trip.image_url} style={styles.coverImage} />
                                     ) : (
                                         <View style={styles.coverImagePlaceholder}>
                                             <Ionicons name="image-outline" size={40} color="#ccc" />

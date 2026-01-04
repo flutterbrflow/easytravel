@@ -1,56 +1,82 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
-import { useNetwork } from '../contexts/NetworkContext';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNetwork } from '../contexts/NetworkContext';
+import { COLORS } from '../constants';
 
-export const SyncIndicator = () => {
+export const SyncIndicator: React.FC = () => {
     const { isConnected, isSyncing } = useNetwork();
+    const spinValue = React.useRef(new Animated.Value(0)).current;
 
-    if (!isConnected) {
-        return (
-            <View style={styles.containerOffline}>
-                <MaterialCommunityIcons name="wifi-off" size={14} color="#fff" />
-                <Text style={styles.textOffline}>Offline</Text>
-            </View>
-        );
+    // Animação de rotação para o sync
+    React.useEffect(() => {
+        if (isSyncing) {
+            Animated.loop(
+                Animated.timing(spinValue, {
+                    toValue: 1,
+                    duration: 1000,
+                    useNativeDriver: true,
+                })
+            ).start();
+        } else {
+            spinValue.setValue(0);
+        }
+    }, [isSyncing]);
+
+    const spin = spinValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
+    // Não mostra nada quando online e não sincronizando
+    if (isConnected && !isSyncing) {
+        return null;
     }
 
-    if (isSyncing) {
-        return (
-            <View style={styles.containerSync}>
-                <ActivityIndicator size="small" color="#137fec" />
-                <Text style={styles.textSync}>Sincronizando...</Text>
-            </View>
-        );
-    }
-
-    return null;
+    return (
+        <View style={styles.container}>
+            {!isConnected && (
+                <View style={styles.badge}>
+                    <MaterialCommunityIcons name="wifi-off" size={18} color="#fff" />
+                    <Text style={styles.text}>Offline</Text>
+                </View>
+            )}
+            {isSyncing && (
+                <View style={[styles.badge, styles.syncBadge]}>
+                    <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                        <MaterialCommunityIcons name="sync" size={18} color="#fff" />
+                    </Animated.View>
+                    <Text style={styles.text}>Sync</Text>
+                </View>
+            )}
+        </View>
+    );
 };
 
 const styles = StyleSheet.create({
-    containerOffline: {
+    container: {
+        // Removido absolute positioning para permitir uso inline
+    },
+    badge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#EF4444',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        marginRight: 8,
-        gap: 4
+        backgroundColor: '#ef4444',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
-    textOffline: {
+    syncBadge: {
+        backgroundColor: COLORS.primary,
+    },
+    text: {
         color: '#fff',
         fontSize: 12,
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
-    containerSync: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        marginRight: 8
-    },
-    textSync: {
-        color: '#137fec',
-        fontSize: 12,
-    }
 });

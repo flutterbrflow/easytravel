@@ -43,14 +43,20 @@ const optimisticWrite = async (
 ) => {
     try {
         // 1. Gravação Local
+        console.log(`[LocalDB] ${action} ${table}: ${recordId}`);
         await db.runAsync(sqlQuery, sqlParams);
 
         // 2. Fila
+        console.log(`[Queue] Mutation enfileirada: ${action} ${table}`);
         await queueMutation(table, action, recordId, data);
 
         // 3. Tentar Enviar
-        if (await isOnline()) {
+        const online = await isOnline();
+        if (online) {
+            console.log('[SyncService] Online - tentando push...');
             SyncService.push();
+        } else {
+            console.log('[SyncService] Offline - push adiado');
         }
     } catch (e) {
         console.error(`Gravação Otimista Falhou (${table} ${action}):`, e);
@@ -68,6 +74,8 @@ export const api = {
         async create(trip: TripInsert) {
             const id = trip.id || generateUUID();
             const newTrip = { ...trip, id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: trip.status || 'planning' };
+
+            console.log('[API] Criando viagem:', newTrip.destination, '- ID:', id);
 
             await optimisticWrite(
                 'trips', 'INSERT', newTrip, id,
@@ -92,6 +100,7 @@ export const api = {
         },
 
         async delete(id: string) {
+            console.log('[API] Deletando viagem - ID:', id);
             await optimisticWrite(
                 'trips', 'DELETE', {}, id,
                 'DELETE FROM trips WHERE id = ?',

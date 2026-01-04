@@ -227,7 +227,6 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
                     <Text style={[styles.headerCenterTitle, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>Minhas Viagens</Text>
 
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <SyncIndicator />
                         <TouchableOpacity
                             style={[styles.iconButton, { backgroundColor: isDark ? '#1e2a36' : '#f3f4f6' }]}
                             onPress={() => navigation.navigate('Profile')}
@@ -237,9 +236,12 @@ const TripListScreen: React.FC<any> = ({ navigation }) => {
                     </View>
                 </View>
             </View>
-            <Text style={[styles.headerGreeting, { color: isDark ? COLORS.textLight : COLORS.textDark }]}>
-                Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 12 }}>
+                <Text style={[styles.headerGreeting, { color: isDark ? COLORS.textLight : COLORS.textDark, marginBottom: 0, marginHorizontal: 0 }]}>
+                    Olá, {user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Viajante'}!
+                </Text>
+                <SyncIndicator />
+            </View>
 
             <View style={[styles.segmentedControl, { backgroundColor: isDark ? '#1e2a36' : '#f0f2f4' }]}>
                 <View style={[

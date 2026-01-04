@@ -41,8 +41,18 @@ export const SyncService = {
 
     async uploadFileToStorage(localUri: string, bucket: string, path: string): Promise<string | null> {
         try {
+            console.log(`[Storage] Iniciando upload: ${bucket}/${path}`);
+            console.log(`[Storage] URI local: ${localUri}`);
+
             const response = await fetch(localUri);
+            if (!response.ok) {
+                console.error(`[Storage] Falha ao ler arquivo local. Status: ${response.status}`);
+                return null;
+            }
+
             const arrayBuffer = await response.arrayBuffer();
+            const fileSizeMB = (arrayBuffer.byteLength / 1024 / 1024).toFixed(2);
+            console.log(`[Storage] Arquivo lido: ${fileSizeMB}MB`);
 
             const { error: uploadError } = await supabase.storage
                 .from(bucket)
@@ -52,17 +62,20 @@ export const SyncService = {
                 });
 
             if (uploadError) {
-                console.error(`Erro upload storage (${bucket}):`, uploadError);
+                console.error(`[Storage] ❌ Erro upload (${bucket}):`);
+                console.error('Mensagem:', uploadError.message);
+                console.error('Detalhes:', JSON.stringify(uploadError, null, 2));
                 return null;
             }
 
             const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+            console.log(`[Storage] ✅ Upload concluído: ${data.publicUrl}`);
             return data.publicUrl;
         } catch (e: any) {
             const msg = e.message || JSON.stringify(e);
-            if (!msg.includes('Network request failed')) {
-                console.error('Falha ao ler/enviar arquivo local:', e);
-            }
+            console.error('[Storage] ❌ Exceção ao fazer upload:');
+            console.error('Erro:', msg);
+            console.error('Stack:', e.stack);
             return null;
         }
     },
@@ -152,7 +165,9 @@ export const SyncService = {
                         // Atualizar também no banco local para corrigir o caminho antigo
                         await db.runAsync(`UPDATE ${table_name} SET image_url = ? WHERE id = ?`, [publicUrl, record_id]);
                     } else {
-                        console.warn('Falha no upload da imagem. Tentando enviar mutation com URL local mesmo (pode falhar no web).');
+                        console.warn('⚠️ Falha no upload. Removendo image_url do payload.');
+                        delete payload.image_url;
+                        await db.runAsync(`UPDATE ${table_name} SET image_url = NULL WHERE id = ?`, [record_id]);
                     }
                 }
 
